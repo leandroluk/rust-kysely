@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nexspec": {
+      "args": [
+        "mcp",
+        "--watch"
+      ],
+      "command": "nexspec"
+    }
+  }
+}

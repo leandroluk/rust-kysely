@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.specs/.index
+.specs/.cache
+.specs/.memory
+.DS_Store
+Thumbs.db
+.specs/.memory/notes/
