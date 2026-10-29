@@ -1,6 +1,6 @@
 # Tasks: 04 — Mutation Query Builders: Insert, Update, Delete & RETURNING
 
-### TASK-MUT-001: Implement InsertQueryBuilder and chained set method
+### TASK-MUT-001: Implement InsertQueryBuilder and chained set method [x]
 - **REQ**: REQ-MUT-001, REQ-MUT-002
 - **Symbols**: `InsertQueryBuilder`, `insert_into`, `.set()`
 - **What**: Implement `InsertQueryBuilder` managing `InsertQueryNode` with CoW, `insert_into` constructor, and `.set(col, val)` supporting `val: impl IntoValue`.

@@ -19,7 +19,8 @@ pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionM
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
 pub use query_builder::{
-    select_from, IntoGroupBy, IntoOrderByExpr, IntoOrderDirection, JoinBuilder, SelectQueryBuilder,
+    insert_into, select_from, InsertQueryBuilder, IntoGroupBy, IntoOrderByExpr, IntoOrderDirection,
+    JoinBuilder, SelectQueryBuilder,
 };
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
