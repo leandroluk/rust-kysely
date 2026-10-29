@@ -18,7 +18,7 @@
 - **Done when**: Batch inserts and serde structs produce multiple parameter rows in `ValuesNode`.
 - **Gate**: `cargo test test_insert_batch_and_record`
 
-### TASK-MUT-003: Implement OnConflictBuilder and PostgreSQL upsert
+### TASK-MUT-003: Implement OnConflictBuilder and PostgreSQL upsert [x]
 - **REQ**: REQ-MUT-005, REQ-MUT-006
 - **Symbols**: `OnConflictBuilder`, `.on_conflict()`
 - **What**: Implement `OnConflictBuilder` supporting `do_nothing()`, `do_update_set()`, column targets, where filtering, and `excluded` table references.

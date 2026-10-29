@@ -10,6 +10,7 @@ use crate::operation_node::{
     ValuesNode,
 };
 use crate::parser::IntoTableSource;
+use crate::query_builder::on_conflict_builder::OnConflictBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 
 /// Fluent query builder for SQL INSERT statements.
@@ -135,6 +136,15 @@ impl InsertQueryBuilder {
         } else {
             Ok(self)
         }
+    }
+
+    /// Configures PostgreSQL `ON CONFLICT` handling.
+    // @spec REQ-MUT-005
+    pub fn on_conflict(mut self, cb: impl FnOnce(OnConflictBuilder) -> OnConflictBuilder) -> Self {
+        let builder = cb(OnConflictBuilder::new());
+        let q = InsertQueryNode::clone_mut(&mut self.node);
+        q.on_conflict = Some(Arc::new(OperationNode::OnConflict(builder.build())));
+        self
     }
 
     /// Compiles the query using the specified query compiler.
@@ -312,6 +322,53 @@ mod tests {
             vec![
                 Value::from("charlie@example.com"),
                 Value::from("admin"),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_insert_on_conflict() {
+        let compiler = PostgresQueryCompiler::new();
+
+        // 1. DO NOTHING
+        let q1 = insert_into("users")
+            .set("id", 1)
+            .set("name", "Alice")
+            .on_conflict(|oc| oc.column("id").do_nothing())
+            .compile(&compiler);
+
+        assert_eq!(
+            q1.sql,
+            "INSERT INTO \"users\" (\"id\", \"name\") VALUES ($1, $2) ON CONFLICT (\"id\") DO NOTHING"
+        );
+        assert_eq!(q1.parameters, vec![Value::from(1), Value::from("Alice")]);
+
+        // 2. DO UPDATE SET with excluded references and where filter
+        let q2 = insert_into("users")
+            .set("id", 1)
+            .set("name", "Alice")
+            .set("email", "alice@example.com")
+            .on_conflict(|oc| {
+                oc.column("id")
+                  .do_update_set(|ub| {
+                      ub.set_ref("name", "excluded.name")
+                        .set_ref("email", "excluded.email")
+                        .where_("users.active", "=", true)
+                  })
+            })
+            .compile(&compiler);
+
+        assert_eq!(
+            q2.sql,
+            "INSERT INTO \"users\" (\"id\", \"name\", \"email\") VALUES ($1, $2, $3) ON CONFLICT (\"id\") DO UPDATE SET \"name\" = \"excluded\".\"name\", \"email\" = \"excluded\".\"email\" WHERE \"users\".\"active\" = $4"
+        );
+        assert_eq!(
+            q2.parameters,
+            vec![
+                Value::from(1),
+                Value::from("Alice"),
+                Value::from("alice@example.com"),
+                Value::from(true),
             ]
         );
     }
