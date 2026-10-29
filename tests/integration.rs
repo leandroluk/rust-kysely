@@ -635,3 +635,134 @@ async fn test_integration_kysely_query_execution_full_cycle() {
     assert_eq!(history[4], "RELEASE SAVEPOINT \"sp1\"");
     assert_eq!(history[5], "COMMIT");
 }
+
+#[tokio::test]
+async fn test_integration_schema_ddl_full_lifecycle() {
+    use async_trait::async_trait;
+    use rust_kysely::{
+        CustomDialect, DatabaseConnection, DefaultQueryCompiler, Driver, DriverError,
+        Kysely, OnModifyForeignAction, QueryResult,
+    };
+    use std::sync::Mutex;
+
+    struct DdlRecordingConnection {
+        executed: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait]
+    impl DatabaseConnection for DdlRecordingConnection {
+        async fn execute_query(&mut self, query: &rust_kysely::CompiledQuery) -> Result<QueryResult, DriverError> {
+            self.executed.lock().unwrap().push(query.sql.clone());
+            Ok(QueryResult::default())
+        }
+    }
+
+    struct DdlRecordingDriver {
+        executed: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait]
+    impl Driver for DdlRecordingDriver {
+        async fn acquire_connection(&self) -> Result<Box<dyn DatabaseConnection>, DriverError> {
+            Ok(Box::new(DdlRecordingConnection {
+                executed: Arc::clone(&self.executed),
+            }))
+        }
+
+        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+            Ok(())
+        }
+
+        async fn destroy(&self) -> Result<(), DriverError> {
+            Ok(())
+        }
+    }
+
+    let executed = Arc::new(Mutex::new(Vec::new()));
+    let driver = Arc::new(DdlRecordingDriver {
+        executed: Arc::clone(&executed),
+    });
+    let compiler = Arc::new(DefaultQueryCompiler::new());
+    let dialect = CustomDialect::new(driver, compiler);
+    let db = Kysely::new(dialect);
+
+    // 1. CREATE TYPE
+    db.schema()
+        .create_type("user_role")
+        .as_enum(["admin", "user", "guest"])
+        .execute()
+        .await
+        .unwrap();
+
+    // 2. CREATE TABLE tenants
+    db.schema()
+        .create_table("tenants")
+        .if_not_exists()
+        .add_column("id", "serial", |c| c.primary_key())
+        .add_column("name", "varchar(100)", |c| c.not_null())
+        .execute()
+        .await
+        .unwrap();
+
+    // 3. CREATE TABLE users with foreign key
+    db.schema()
+        .create_table("users")
+        .if_not_exists()
+        .add_column("id", "serial", |c| c.primary_key())
+        .add_column("tenant_id", "int4", |c| {
+            c.references("tenants.id").on_delete(OnModifyForeignAction::Cascade)
+        })
+        .add_column("email", "varchar(255)", |c| c.not_null().unique())
+        .add_column("role", "user_role", |c| c.default_to("user"))
+        .execute()
+        .await
+        .unwrap();
+
+    // 4. CREATE INDEX
+    db.schema()
+        .create_index("idx_users_tenant_email")
+        .on("users")
+        .columns(["tenant_id", "email"])
+        .unique()
+        .using("btree")
+        .execute()
+        .await
+        .unwrap();
+
+    // 5. ALTER TABLE
+    db.schema()
+        .alter_table("users")
+        .add_column("last_login", "timestamp", |c| c.not_null())
+        .execute()
+        .await
+        .unwrap();
+
+    // 6. CREATE VIEW
+    db.schema()
+        .create_view("active_tenants")
+        .as_query(select_from("tenants").select(["id", "name"]))
+        .execute()
+        .await
+        .unwrap();
+
+    // 7. DROP VIEW
+    db.schema().drop_view("active_tenants").if_exists().execute().await.unwrap();
+
+    // 8. DROP TABLE
+    db.schema().drop_table("users").if_exists().cascade().execute().await.unwrap();
+
+    // 9. DROP TYPE
+    db.schema().drop_type("user_role").if_exists().cascade().execute().await.unwrap();
+
+    let history = executed.lock().unwrap().clone();
+    assert_eq!(history.len(), 9);
+    assert_eq!(history[0], "CREATE TYPE \"user_role\" AS ENUM ('admin', 'user', 'guest')");
+    assert_eq!(history[1], "CREATE TABLE IF NOT EXISTS \"tenants\" (\"id\" serial PRIMARY KEY, \"name\" varchar(100) NOT NULL)");
+    assert_eq!(history[2], "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" serial PRIMARY KEY, \"tenant_id\" int4 REFERENCES \"tenants\" (\"id\") ON DELETE CASCADE, \"email\" varchar(255) NOT NULL UNIQUE, \"role\" user_role DEFAULT ?)");
+    assert_eq!(history[3], "CREATE UNIQUE INDEX \"idx_users_tenant_email\" ON \"users\" USING btree (\"tenant_id\", \"email\")");
+    assert_eq!(history[4], "ALTER TABLE \"users\" ADD COLUMN \"last_login\" timestamp NOT NULL");
+    assert_eq!(history[5], "CREATE VIEW \"active_tenants\" AS SELECT \"id\", \"name\" FROM \"tenants\"");
+    assert_eq!(history[6], "DROP VIEW IF EXISTS \"active_tenants\"");
+    assert_eq!(history[7], "DROP TABLE IF EXISTS \"users\" CASCADE");
+    assert_eq!(history[8], "DROP TYPE IF EXISTS \"user_role\" CASCADE");
+}

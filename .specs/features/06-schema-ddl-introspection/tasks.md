@@ -63,7 +63,7 @@
 - **Done when**: Introspector queries return structured `TableMetadata` and `ColumnMetadata`.
 - **Gate**: `cargo test test_postgres_introspection`
 
-### TASK-DDL-008: Comprehensive integration tests for Schema DDL & Introspection
+### TASK-DDL-008: Comprehensive integration tests for Schema DDL & Introspection [x]
 - **REQ**: REQ-DDL-001..010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: End-to-end integration tests verifying DDL generation, execution, table creation, alteration, indexing, custom types, and schema introspection.

@@ -148,9 +148,9 @@ pub struct CreateTableNode {
     /// Table name node
     pub name: Arc<OperationNode>,
     /// Column definitions
-    pub columns: SmallVec<[ColumnDefinitionNode; 8]>,
+    pub columns: Vec<ColumnDefinitionNode>,
     /// Table constraints
-    pub constraints: SmallVec<[TableConstraintNode; 4]>,
+    pub constraints: Vec<TableConstraintNode>,
     /// IF NOT EXISTS flag
     pub if_not_exists: bool,
     /// TEMPORARY flag
@@ -162,8 +162,8 @@ impl CreateTableNode {
     pub fn new(name: Arc<OperationNode>) -> Self {
         Self {
             name,
-            columns: SmallVec::new(),
-            constraints: SmallVec::new(),
+            columns: Vec::new(),
+            constraints: Vec::new(),
             if_not_exists: false,
             temporary: false,
         }
@@ -215,7 +215,7 @@ pub struct AlterTableNode {
     /// Target table
     pub table: Arc<OperationNode>,
     /// Alter actions list
-    pub actions: SmallVec<[AlterTableAction; 4]>,
+    pub actions: Vec<AlterTableAction>,
 }
 
 impl AlterTableNode {
@@ -223,7 +223,7 @@ impl AlterTableNode {
     pub fn new(table: Arc<OperationNode>) -> Self {
         Self {
             table,
-            actions: SmallVec::new(),
+            actions: Vec::new(),
         }
     }
 }

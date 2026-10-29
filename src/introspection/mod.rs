@@ -5,7 +5,7 @@ use crate::driver::DriverError;
 
 /// Metadata for a single table column.
 // @spec REQ-DDL-010
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ColumnMetadata {
     /// Column name
     pub name: String,
@@ -21,7 +21,7 @@ pub struct ColumnMetadata {
 
 /// Metadata for a database table or view.
 // @spec REQ-DDL-010
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableMetadata {
     /// Table or view name
     pub name: String,
@@ -35,7 +35,7 @@ pub struct TableMetadata {
 
 /// Metadata container for an entire database schema.
 // @spec REQ-DDL-010
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DatabaseMetadata {
     /// List of tables and views
     pub tables: Vec<TableMetadata>,
