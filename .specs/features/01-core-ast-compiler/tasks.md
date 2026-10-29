@@ -64,7 +64,7 @@
 - **Done when**: `PostgresQueryCompiler` compiles complex queries with `$N` parameters and correctly escaped `"double_quotes"`.
 - **Gate**: `cargo test test_postgres_compiler`
 
-### TASK-AST-008: Comprehensive Integration Tests and Footprint Verification
+### TASK-AST-008: Comprehensive Integration Tests and Footprint Verification [x]
 - **REQ**: REQ-AST-010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: Add complete test harness in `tests/integration.rs` covering multi-table JOINs, subqueries, CTEs (`WITH`), CASE expressions, and verify zero proc-macros and low `target/` size.

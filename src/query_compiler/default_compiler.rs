@@ -560,7 +560,13 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
                 self.visit_node(u);
             }
             if let Some(ref whr) = node.where_clause {
-                self.visit_node(whr);
+                match whr.as_ref() {
+                    OperationNode::Where(_) => self.visit_node(whr),
+                    _ => {
+                        self.append(" WHERE ");
+                        self.visit_node(whr);
+                    }
+                }
             }
         }
     }

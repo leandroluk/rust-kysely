@@ -1,18 +1,20 @@
 # Project State
 
 ## Status
-- **Current Milestone**: Milestone 1 (Core AST & Compilador PostgreSQL) — Em Execução
-- **Active Feature**: [01-core-ast-compiler](../features/01-core-ast-compiler/spec.md)
-- **Current Phase**: Execute
-- **Active Task**: TASK-AST-008
+- **Current Milestone**: Milestone 1 (Core AST & Compilador PostgreSQL) — Concluída ✓
+- **Active Feature**: [01-core-ast-compiler](../features/01-core-ast-compiler/spec.md) (Todas as 8 tarefas finalizadas)
+- **Current Phase**: Milestone 1 Complete (Pronto para Milestone 2: 02-expressions-raw-sql)
+- **Active Task**: None
 - **Blockers**: None
 
 ## Cost
-- Documentação completa do `.specs/` realizada (9 especificações formais de features com requisitos REQ-* mapeados).
-- Design e quebra em 8 tarefas atômicas concluídos para a Milestone 1 (`TASK-AST-001` a `TASK-AST-008`).
-- Footprint control e harness de teste inicial validados (`target/` ~250MB, zero `.pdb`s descontrolados).
+- Milestone 1 implementada integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 satisfeitos.
+- 15 testes de integração e unitários passando em 0.00s.
+- `cargo clippy -- -D warnings` limpo sem nenhum aviso.
+- Footprint control validado: `target/` em ~253MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-AST-008 complete. Gate: 15/15 pass. Footprint: 253 MB. [REQ-AST-010]
 - 2026-10-29 TASK-AST-007 complete. Gate: 11/11 pass. [REQ-AST-009]
 - 2026-10-29 TASK-AST-006 complete. Gate: 10/10 pass. [REQ-AST-008]
 - 2026-10-29 TASK-AST-005 complete. Gate: 9/9 pass. [REQ-AST-006] [REQ-AST-007]
@@ -36,4 +38,5 @@
 - [x] TASK-AST-005: Implement OperationNodeVisitor and OperationNodeTransformer traits — Execute phase
 - [x] TASK-AST-006: Implement CompiledQuery and DefaultQueryCompiler — Execute phase
 - [x] TASK-AST-007: Implement PostgresQueryCompiler — Execute phase
-- [ ] TASK-AST-008: Comprehensive Integration Tests and Footprint Verification — Execute phase
+- [x] TASK-AST-008: Comprehensive Integration Tests and Footprint Verification — Execute phase
+- [ ] Milestone 2: Specify and implement 02-expressions-raw-sql (ExpressionBuilder and sql`` tagged template equivalents)
