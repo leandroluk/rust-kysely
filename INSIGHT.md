@@ -134,7 +134,41 @@ Para que o desenvolvedor **nunca precise escrever `.into()` em cada campo**, o `
    db.insert_into("person").values(&NewPerson { first_name: "John", age: 30 })
    ```
 
-### 2.4. Inferência de Linhas e Resultados (`Row` e Deserialização)
+### 2.4. Projeções no `.select(...)`: Arrays vs. Tuplas via `IntoSelections`
+No TypeScript, o Kysely aceita uma mistura de strings (`'u.id'`) e expressões (`db.fn.count(...)`) dentro de um mesmo array `['u.id', 'u.name', count(...)]` graças à tipagem união do TS (`(string | Expression)[]`).
+
+No Rust, arrays de colchetes `[a, b]` são tipos homogêneos `[T; N]`. Para suportar **um único `.select(...)`** sem dividir chamadas e sem nenhuma gambiarra de boxing dinâmico, adotamos a trait nativa **`IntoSelections`** (o mesmo padrão canônico usado por crates como `axum` e `actix-web` para argumentos compostos):
+
+1. **Tuplas Heterogêneas `(...)` (Strings + Funções + Expressões juntas)**:
+   ```rust
+   // Uma única chamada limpa e fluente:
+   db.select_from("users as u")
+     .select((
+         "u.id",
+         "u.name",
+         db.fn().count("o.id").as_("order_count"),
+     ))
+   ```
+2. **Arrays Homogêneos `[...]` (Apenas strings)**:
+   ```rust
+   db.select_from("users").select(["id", "name", "email"])
+   ```
+3. **Item Único**:
+   ```rust
+   db.select_from("users").select("id")
+   db.select_from("users").select(db.fn().count_all().as_("total"))
+   ```
+4. **Closure Callback com `ExpressionBuilder` (`.select(|eb| ...)` )**:
+   ```rust
+   db.select_from("users as u")
+     .select(|eb| (
+         "u.id",
+         "u.name",
+         eb.fn().count("o.id").as_("order_count"),
+     ))
+   ```
+
+### 2.5. Inferência de Linhas e Resultados (`Row` e Deserialização)
 No TypeScript, o Kysely calcula o tipo de retorno da query a partir das colunas passadas no `.select(...)`. Em Rust, os tipos são nominais:
 1. **Dynamic Type-Safe `Row` (Default)**:
    ```rust
@@ -315,11 +349,11 @@ let users = db
         eb.cmp("u.role", "=", "admin"),
         eb.cmp("u.points", ">=", 1000),
     ]))
-    .select([
+    .select((
         "u.id",
         "u.name",
-    ])
-    .select(db.fn().count("o.id").as_("order_count"))
+        db.fn().count("o.id").as_("order_count"),
+    ))
     .group_by(["u.id", "u.name"])
     .order_by("order_count", "desc")
     .limit(10)
