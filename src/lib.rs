@@ -7,7 +7,10 @@
 pub mod operation_node;
 pub mod util;
 
-pub use operation_node::Value;
+pub use operation_node::{
+    ColumnNode, IdentifierNode, OperationNode, PrimitiveValueListNode, RawNode, ReferenceNode,
+    TableNode, Value, ValueNode,
+};
 pub use util::QueryId;
 
 /// Library version

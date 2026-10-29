@@ -10,7 +10,7 @@
 - **Done when**: Unit tests pass verifying unique `QueryId` generation and `Value` formatting/conversions.
 - **Gate**: `cargo test test_query_id test_value`
 
-### TASK-AST-002: Implement Terminal & Core Identifier AST nodes
+### TASK-AST-002: Implement Terminal & Core Identifier AST nodes [x]
 - **REQ**: REQ-AST-001, REQ-AST-003
 - **Symbols**: `IdentifierNode`, `TableNode`, `ColumnNode`, `ReferenceNode`, `RawNode`, `OperationNode`
 - **What**: Implement terminal AST nodes using `compact_str::CompactStr` for zero-allocation identifier storage and define the top-level `OperationNode` enum.
