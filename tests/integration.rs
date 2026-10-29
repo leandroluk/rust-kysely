@@ -2,7 +2,7 @@ use rust_kysely::dialect::PostgresQueryCompiler;
 use rust_kysely::expression::Expression;
 use rust_kysely::operation_node::*;
 use rust_kysely::query_compiler::DefaultQueryCompiler;
-use rust_kysely::{sql, ExpressionBuilder, VERSION};
+use rust_kysely::{select_from, sql, ExpressionBuilder, OrderNulls, VERSION};
 use std::sync::Arc;
 
 #[test]
@@ -327,4 +327,81 @@ fn test_integration_eb_and_raw_builder_combined() {
         "SELECT \"first_name\", \"last_name\", \"email\" FROM \"employees\" WHERE \"salary\" >= $1 AND \"created_at\" < NOW()"
     );
     assert_eq!(compiled_raw.parameters, vec![Value::I64(75000)]);
+}
+
+#[test]
+fn test_integration_select_builder_full_fluent_pipeline() {
+    let compiler = PostgresQueryCompiler::new();
+    let eb = ExpressionBuilder::new();
+
+    let cte = select_from("users")
+        .select(["id", "org_id"])
+        .where_("active", "=", true);
+
+    let query = select_from("active_users as u")
+        .with("active_users", cte)
+        .select((
+            "u.id",
+            "u.name",
+            eb.fn_().count("u.id").as_("total_users"),
+        ))
+        .inner_join_ref("organizations as o", "o.id", "u.org_id")
+        .left_join("orders as ord", |jb| {
+            jb.on_ref("ord.user_id", "=", "u.id")
+              .on("ord.status", "=", "completed")
+        })
+        .where_("u.org_id", ">", 10)
+        .where_expr(|eb| {
+            eb.or([
+                eb.cmp("u.role", "=", "admin"),
+                eb.cmp("u.role", "=", "manager"),
+            ])
+        })
+        .group_by(["u.id", "u.name", "o.name"])
+        .having_expr(|eb| eb.cmp_expr(eb.fn_().count("u.id"), ">", sql::lit(1)))
+        .order_by_nulls("u.id", "asc", OrderNulls::First)
+        .limit(25)
+        .offset(50)
+        .compile(&compiler);
+
+    assert_eq!(
+        query.sql,
+        "WITH \"active_users\" AS (SELECT \"id\", \"org_id\" FROM \"users\" WHERE \"active\" = $1) SELECT \"u\".\"id\", \"u\".\"name\", COUNT(\"u\".\"id\") AS \"total_users\" FROM \"active_users\" AS \"u\" INNER JOIN \"organizations\" AS \"o\" ON \"o\".\"id\" = \"u\".\"org_id\" LEFT JOIN \"orders\" AS \"ord\" ON \"ord\".\"user_id\" = \"u\".\"id\" AND \"ord\".\"status\" = $2 WHERE \"u\".\"org_id\" > $3 AND (\"u\".\"role\" = $4 OR \"u\".\"role\" = $5) GROUP BY \"u\".\"id\", \"u\".\"name\", \"o\".\"name\" HAVING COUNT(\"u\".\"id\") > $6 ORDER BY \"u\".\"id\" ASC NULLS FIRST LIMIT $7 OFFSET $8"
+    );
+    assert_eq!(
+        query.parameters,
+        vec![
+            Value::from(true),
+            Value::from("completed"),
+            Value::from(10),
+            Value::from("admin"),
+            Value::from("manager"),
+            Value::from(1),
+            Value::from(25),
+            Value::from(50),
+        ]
+    );
+}
+
+#[test]
+fn test_integration_select_builder_set_operations() {
+    let compiler = PostgresQueryCompiler::new();
+
+    let q1 = select_from("users").select(["id", "email"]).where_("role", "=", "admin");
+    let q2 = select_from("users").select(["id", "email"]).where_("role", "=", "moderator");
+    let q3 = select_from("users").select(["id", "email"]).where_("active", "=", false);
+
+    let query = q1.union_all(q2).except(q3).compile(&compiler);
+    assert_eq!(
+        query.sql,
+        "SELECT \"id\", \"email\" FROM \"users\" WHERE \"role\" = $1 UNION ALL SELECT \"id\", \"email\" FROM \"users\" WHERE \"role\" = $2 EXCEPT SELECT \"id\", \"email\" FROM \"users\" WHERE \"active\" = $3"
+    );
+    assert_eq!(
+        query.parameters,
+        vec![
+            Value::from("admin"),
+            Value::from("moderator"),
+            Value::from(false),
+        ]
+    );
 }

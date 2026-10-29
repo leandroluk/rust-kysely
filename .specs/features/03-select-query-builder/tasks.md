@@ -54,7 +54,7 @@
 - **Done when**: CTEs and set operations construct valid AST nodes.
 - **Gate**: `cargo test test_select_with_and_set_ops`
 
-### TASK-SEL-007: Comprehensive integration tests for SelectQueryBuilder
+### TASK-SEL-007: Comprehensive integration tests for SelectQueryBuilder [x]
 - **REQ**: REQ-SEL-001, REQ-SEL-002, REQ-SEL-003, REQ-SEL-004, REQ-SEL-005, REQ-SEL-006, REQ-SEL-007, REQ-SEL-008, REQ-SEL-009, REQ-SEL-010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: End-to-end integration tests compiling realistic SELECT queries with PostgresQueryCompiler and verifying zero warnings.
