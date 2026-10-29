@@ -162,6 +162,29 @@ impl ParensNode {
     }
 }
 
+/// SQL function call node (`func_name(arg1, arg2, ...)`).
+// @spec REQ-EXPR-010
+#[derive(Debug, Clone, PartialEq)]
+pub struct FunctionNode {
+    /// Function name (e.g. `COUNT`, `MAX`, `COALESCE`).
+    pub name: CompactString,
+    /// Arguments passed to the function.
+    pub arguments: SmallVec<[Arc<OperationNode>; 2]>,
+}
+
+impl FunctionNode {
+    /// Creates a new function call node.
+    pub fn new(
+        name: impl Into<CompactString>,
+        arguments: impl IntoIterator<Item = Arc<OperationNode>>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            arguments: arguments.into_iter().collect(),
+        }
+    }
+}
+
 /// AND boolean operation node (`left AND right`).
 // @spec REQ-AST-001
 #[derive(Debug, Clone, PartialEq)]

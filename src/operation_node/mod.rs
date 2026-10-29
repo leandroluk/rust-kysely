@@ -14,7 +14,7 @@ pub use clause_nodes::{
     WithNode,
 };
 pub use expression_nodes::{
-    AliasNode, AndNode, BinaryOperationNode, CaseNode, CastNode, OrNode, ParensNode,
+    AliasNode, AndNode, BinaryOperationNode, CaseNode, CastNode, FunctionNode, OrNode, ParensNode,
     UnaryOperationNode, WhenNode,
 };
 pub use query_nodes::{
@@ -26,7 +26,7 @@ pub use terminal_nodes::{
     ValueNode,
 };
 pub use transformer::OperationNodeTransformer;
-pub use value::Value;
+pub use value::{IntoValue, Value};
 pub use visitor::{OperationNodeVisitor, StackTrackingVisitor};
 
 /// Top-level AST node enum representing any node in the query tree.
@@ -94,6 +94,8 @@ pub enum OperationNode {
     And(AndNode),
     /// OR boolean node
     Or(OrNode),
+    /// Function call node
+    Function(FunctionNode),
 
     // Queries
     /// SELECT query node

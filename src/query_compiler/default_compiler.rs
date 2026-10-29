@@ -341,6 +341,18 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
         self.visit_node(&node.right);
     }
 
+    fn visit_function(&mut self, node: &FunctionNode) {
+        self.append(node.name.as_str());
+        self.append("(");
+        for (i, arg) in node.arguments.iter().enumerate() {
+            if i > 0 {
+                self.append(", ");
+            }
+            self.visit_node(arg);
+        }
+        self.append(")");
+    }
+
     fn visit_select_query(&mut self, node: &SelectQueryNode) {
         if let Some(ref with) = node.with {
             self.visit_node(with);

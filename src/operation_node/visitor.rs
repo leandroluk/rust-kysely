@@ -36,6 +36,7 @@ pub trait OperationNodeVisitor {
             OperationNode::Parens(n) => self.visit_parens(n),
             OperationNode::And(n) => self.visit_and(n),
             OperationNode::Or(n) => self.visit_or(n),
+            OperationNode::Function(n) => self.visit_function(n),
             OperationNode::SelectQuery(n) => self.visit_select_query(n),
             OperationNode::InsertQuery(n) => self.visit_insert_query(n),
             OperationNode::UpdateQuery(n) => self.visit_update_query(n),
@@ -214,6 +215,13 @@ pub trait OperationNodeVisitor {
     fn visit_or(&mut self, node: &OrNode) {
         self.visit_node(&node.left);
         self.visit_node(&node.right);
+    }
+
+    /// Visits a FunctionNode.
+    fn visit_function(&mut self, node: &FunctionNode) {
+        for arg in &node.arguments {
+            self.visit_node(arg);
+        }
     }
 
     /// Visits a SelectQueryNode.

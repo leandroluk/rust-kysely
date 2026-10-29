@@ -140,6 +140,124 @@ impl<T: Into<Value>> From<Option<T>> for Value {
     }
 }
 
+/// Trait for converting Rust scalar and reference values into an AST `Value` parameter without explicit `.into()`.
+// @spec REQ-EXPR-002
+pub trait IntoValue {
+    /// Converts this value into an SQL AST `Value`.
+    fn into_value(self) -> Value;
+}
+
+impl IntoValue for Value {
+    fn into_value(self) -> Value {
+        self
+    }
+}
+
+impl IntoValue for bool {
+    fn into_value(self) -> Value {
+        Value::Bool(self)
+    }
+}
+
+impl IntoValue for i8 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for i16 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for i32 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for i64 {
+    fn into_value(self) -> Value {
+        Value::I64(self)
+    }
+}
+
+impl IntoValue for isize {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for u8 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for u16 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for u32 {
+    fn into_value(self) -> Value {
+        Value::I64(self as i64)
+    }
+}
+
+impl IntoValue for f32 {
+    fn into_value(self) -> Value {
+        Value::F64(self as f64)
+    }
+}
+
+impl IntoValue for f64 {
+    fn into_value(self) -> Value {
+        Value::F64(self)
+    }
+}
+
+impl IntoValue for &str {
+    fn into_value(self) -> Value {
+        Value::Text(CompactString::new(self))
+    }
+}
+
+impl IntoValue for String {
+    fn into_value(self) -> Value {
+        Value::Text(CompactString::new(self))
+    }
+}
+
+impl IntoValue for CompactString {
+    fn into_value(self) -> Value {
+        Value::Text(self)
+    }
+}
+
+impl IntoValue for Vec<u8> {
+    fn into_value(self) -> Value {
+        Value::Bytes(self)
+    }
+}
+
+impl IntoValue for &[u8] {
+    fn into_value(self) -> Value {
+        Value::Bytes(self.to_vec())
+    }
+}
+
+impl<T: IntoValue> IntoValue for Option<T> {
+    fn into_value(self) -> Value {
+        match self {
+            Some(v) => v.into_value(),
+            None => Value::Null,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +273,12 @@ mod tests {
         assert_eq!(format!("{}", Value::I64(10)), "10");
         assert!(Value::Null.is_null());
         assert!(!Value::I64(10).is_null());
+
+        // REQ-EXPR-002: Test into_value frictionless conversions
+        assert_eq!(123i32.into_value(), Value::I64(123));
+        assert_eq!("foo".into_value(), Value::Text(CompactString::new("foo")));
+        assert_eq!(true.into_value(), Value::Bool(true));
+        assert_eq!(None::<i32>.into_value(), Value::Null);
+        assert_eq!(Some(456i64).into_value(), Value::I64(456));
     }
 }

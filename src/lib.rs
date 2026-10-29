@@ -5,12 +5,14 @@
 #![warn(missing_docs)]
 
 pub mod dialect;
+pub mod expression;
 pub mod operation_node;
 pub mod query_compiler;
 pub mod util;
 
 #[cfg(feature = "postgres")]
 pub use dialect::PostgresQueryCompiler;
+pub use expression::{Expression, ExpressionWrapper};
 pub use operation_node::*;
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,

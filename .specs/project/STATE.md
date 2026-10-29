@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 2 (Expressions, ExpressionBuilder & Raw SQL) — Em Execução
 - **Active Feature**: [02-expressions-raw-sql](../features/02-expressions-raw-sql/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-EXPR-001
+- **Active Task**: TASK-EXPR-002
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 implementada integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 2 (`TASK-EXPR-001` a `TASK-EXPR-007`).
-- 15 testes de integração e unitários passando em 0.00s.
+- 16 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~253MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-EXPR-001 complete. Gate: 16/16 pass. [REQ-EXPR-001] [REQ-EXPR-002]
 - 2026-10-29 TASK-AST-008 complete. Gate: 15/15 pass. Footprint: 253 MB. [REQ-AST-010]
 - 2026-10-29 TASK-AST-007 complete. Gate: 11/11 pass. [REQ-AST-009]
 - 2026-10-29 TASK-AST-006 complete. Gate: 10/10 pass. [REQ-AST-008]
@@ -32,7 +33,7 @@
 5. **Tuplas para `.select(...)` Heterogêneo**: Adotada a trait `IntoSelections` para suportar strings e expressões juntas em uma única chamada de `.select((col1, col2, expr))` sem quebrar o encadeamento.
 
 ## Todos
-- [ ] TASK-EXPR-001: Implement Expression trait, ExpressionWrapper, FunctionNode and IntoValue — Execute phase
+- [x] TASK-EXPR-001: Implement Expression trait, ExpressionWrapper, FunctionNode and IntoValue — Execute phase
 - [ ] TASK-EXPR-002: Implement sql fluent builder (RawBuilder) — Execute phase
 - [ ] TASK-EXPR-003: Implement sql helper functions (raw, id, table, lit, join) — Execute phase
 - [ ] TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons — Execute phase

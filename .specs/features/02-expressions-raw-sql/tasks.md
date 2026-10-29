@@ -1,6 +1,6 @@
 # Tasks: 02 — Expressions, ExpressionBuilder (`eb`) & Macro-Free Raw SQL (`sql`)
 
-### TASK-EXPR-001: Implement Expression trait, ExpressionWrapper, FunctionNode and IntoValue
+### TASK-EXPR-001: Implement Expression trait, ExpressionWrapper, FunctionNode and IntoValue [x]
 - **REQ**: REQ-EXPR-001, REQ-EXPR-002
 - **Symbols**: `Expression`, `ExpressionWrapper`, `IntoValue`, `FunctionNode`
 - **What**: Implement `Expression<T>` trait, `ExpressionWrapper<T>`, `IntoValue` trait for automatic scalar parameter binding without `.into()`, and `FunctionNode` in the AST with visitor and compiler support.

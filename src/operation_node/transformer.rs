@@ -41,6 +41,7 @@ pub trait OperationNodeTransformer {
             OperationNode::Parens(n) => self.transform_parens(n, &node),
             OperationNode::And(n) => self.transform_and(n, &node),
             OperationNode::Or(n) => self.transform_or(n, &node),
+            OperationNode::Function(n) => self.transform_function(n, &node),
             OperationNode::SelectQuery(n) => self.transform_select_query(n, &node),
             OperationNode::InsertQuery(n) => self.transform_insert_query(n, &node),
             OperationNode::UpdateQuery(n) => self.transform_update_query(n, &node),
@@ -613,6 +614,35 @@ pub trait OperationNodeTransformer {
             Arc::new(OperationNode::Or(OrNode {
                 left: new_left,
                 right: new_right,
+            }))
+        }
+    }
+
+    /// Transforms a FunctionNode.
+    fn transform_function(
+        &mut self,
+        node: &FunctionNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        let mut changed = false;
+        let new_args: SmallVec<[Arc<OperationNode>; 2]> = node
+            .arguments
+            .iter()
+            .map(|a| {
+                let transformed = self.transform_node(Arc::clone(a));
+                if !Arc::ptr_eq(a, &transformed) {
+                    changed = true;
+                }
+                transformed
+            })
+            .collect();
+
+        if !changed {
+            Arc::clone(orig)
+        } else {
+            Arc::new(OperationNode::Function(FunctionNode {
+                name: node.name.clone(),
+                arguments: new_args,
             }))
         }
     }
