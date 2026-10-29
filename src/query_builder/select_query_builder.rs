@@ -302,8 +302,36 @@ impl SelectQueryBuilder {
     }
 
     /// Adds a `WHERE col OP val` filter condition to the query.
+    ///
+    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
     // @spec REQ-SEL-004
     pub fn where_(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Canonical Rust alias for SQL `WHERE col OP val` filter condition.
+    ///
+    /// In Rust, `where` is a reserved keyword for trait bounds.
+    /// Use `filter` as the idiomatic, clean alternative to `.r#where(...)` or `.where_(...)`.
+    // @spec REQ-SEL-004
+    #[inline]
+    pub fn filter(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Adds a `WHERE col OP val` filter condition using Rust raw identifier `r#where`.
+    // @spec REQ-SEL-004
+    pub fn r#where(
         mut self,
         col: impl Into<CompactString>,
         operator: impl Into<CompactString>,
@@ -313,6 +341,18 @@ impl SelectQueryBuilder {
         let cond = eb.cmp(col, operator, val);
         self.append_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for SQL `WHERE col1 OP col2` reference comparison.
+    // @spec REQ-SEL-004
+    #[inline]
+    pub fn filter_ref(
+        self,
+        col1: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        col2: impl Into<CompactString>,
+    ) -> Self {
+        self.where_ref(col1, operator, col2)
     }
 
     /// Adds a `WHERE col1 OP col2` reference comparison filter to the query.
@@ -329,6 +369,17 @@ impl SelectQueryBuilder {
         self
     }
 
+    /// Canonical Rust alias for arbitrary boolean expressions in `WHERE`.
+    // @spec REQ-SEL-004
+    #[inline]
+    pub fn filter_expr<F, E, T>(self, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        self.where_expr(cb)
+    }
+
     /// Adds an arbitrary boolean expression to the `WHERE` clause via a callback.
     // @spec REQ-SEL-004
     pub fn where_expr<F, E, T>(mut self, cb: F) -> Self
@@ -340,6 +391,18 @@ impl SelectQueryBuilder {
         let cond = (cb)(&eb);
         self.append_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for SQL `OR col OP val` filter condition.
+    // @spec REQ-SEL-004
+    #[inline]
+    pub fn or_filter(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.or_where_(col, operator, val)
     }
 
     /// Adds an `OR col OP val` filter condition to the query.
@@ -354,6 +417,18 @@ impl SelectQueryBuilder {
         let cond = eb.cmp(col, operator, val);
         self.append_or_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for `OR col1 OP col2` reference comparison.
+    // @spec REQ-SEL-004
+    #[inline]
+    pub fn or_filter_ref(
+        self,
+        col1: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        col2: impl Into<CompactString>,
+    ) -> Self {
+        self.or_where_ref(col1, operator, col2)
     }
 
     /// Adds an `OR col1 OP col2` reference comparison filter to the query.
@@ -858,11 +933,11 @@ mod tests {
     fn test_select_where() {
         let compiler = PostgresQueryCompiler::new();
 
-        // 1. where_ and where_ref
+        // 1. where_, r#where and filter equivalence
         let q1 = select_from("users as u")
             .select(["u.id", "u.name"])
-            .where_("u.age", ">=", 18)
-            .where_ref("u.manager_id", "!=", "u.id")
+            .filter("u.age", ">=", 18)
+            .filter_ref("u.manager_id", "!=", "u.id")
             .compile(&compiler);
 
         assert_eq!(
@@ -870,6 +945,13 @@ mod tests {
             "SELECT \"u\".\"id\", \"u\".\"name\" FROM \"users\" AS \"u\" WHERE \"u\".\"age\" >= $1 AND \"u\".\"manager_id\" != \"u\".\"id\""
         );
         assert_eq!(q1.parameters, vec![crate::operation_node::Value::from(18)]);
+
+        let q1_raw = select_from("users as u")
+            .select(["u.id", "u.name"])
+            .r#where("u.age", ">=", 18)
+            .where_ref("u.manager_id", "!=", "u.id")
+            .compile(&compiler);
+        assert_eq!(q1.sql, q1_raw.sql);
 
         // 2. or_where_ and where_expr with eb.or
         let q2 = select_from("users as u")

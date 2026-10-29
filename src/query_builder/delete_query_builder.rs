@@ -227,8 +227,36 @@ impl DeleteQueryBuilder {
     }
 
     /// Adds a `WHERE col OP val` filter to the DELETE query.
+    ///
+    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
     // @spec REQ-MUT-009
     pub fn where_(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Canonical Rust alias for SQL `WHERE col OP val` filter condition.
+    ///
+    /// In Rust, `where` is a reserved keyword for trait bounds.
+    /// Use `filter` as the idiomatic, clean alternative to `.r#where(...)` or `.where_(...)`.
+    // @spec REQ-MUT-009
+    #[inline]
+    pub fn filter(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Adds a `WHERE col OP val` filter condition using Rust raw identifier `r#where`.
+    // @spec REQ-MUT-009
+    pub fn r#where(
         mut self,
         col: impl Into<CompactString>,
         operator: impl Into<CompactString>,
@@ -238,6 +266,18 @@ impl DeleteQueryBuilder {
         let cond = eb.cmp(col, operator, val);
         self.append_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for SQL `WHERE col1 OP col2` reference comparison.
+    // @spec REQ-MUT-009
+    #[inline]
+    pub fn filter_ref(
+        self,
+        col1: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        col2: impl Into<CompactString>,
+    ) -> Self {
+        self.where_ref(col1, operator, col2)
     }
 
     /// Adds a `WHERE col1 OP col2` reference comparison filter to the query.
@@ -254,6 +294,17 @@ impl DeleteQueryBuilder {
         self
     }
 
+    /// Canonical Rust alias for arbitrary boolean expressions in `WHERE`.
+    // @spec REQ-MUT-009
+    #[inline]
+    pub fn filter_expr<F, E, T>(self, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        self.where_expr(cb)
+    }
+
     /// Adds an arbitrary boolean expression to the `WHERE` clause via a callback.
     // @spec REQ-MUT-009
     pub fn where_expr<F, E, T>(mut self, cb: F) -> Self
@@ -265,6 +316,18 @@ impl DeleteQueryBuilder {
         let cond = (cb)(&eb);
         self.append_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for SQL `OR col OP val` filter condition.
+    // @spec REQ-MUT-009
+    #[inline]
+    pub fn or_filter(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.or_where_(col, operator, val)
     }
 
     /// Adds an `OR col OP val` filter condition to the query.
@@ -279,6 +342,18 @@ impl DeleteQueryBuilder {
         let cond = eb.cmp(col, operator, val);
         self.append_or_where(cond.to_operation_node());
         self
+    }
+
+    /// Canonical Rust alias for `OR col1 OP col2` reference comparison.
+    // @spec REQ-MUT-009
+    #[inline]
+    pub fn or_filter_ref(
+        self,
+        col1: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        col2: impl Into<CompactString>,
+    ) -> Self {
+        self.or_where_ref(col1, operator, col2)
     }
 
     /// Adds an `OR col1 OP col2` reference comparison filter to the query.

@@ -56,8 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 let rows = db
     .select_from("orders")
     .select(["id", "total_cents", "status"])
-    .where_("status", "=", "completed")
-    .where_("total_cents", ">", 5000)
+    .filter("status", "=", "completed")
+    .filter("total_cents", ">", 5000)
     .order_by("created_at", "DESC")
     .limit(20)
     .execute()
@@ -69,6 +69,10 @@ for row in rows.rows {
     println!("Order #{}: ${:.2}", id, total as f64 / 100.0);
 }
 ```
+
+> [!TIP]
+> **Filtering: `.filter(...)` vs `.where(...)`**  
+> Since `where` is a reserved language keyword in Rust, `rust-kysely` offers `.filter(...)` as the clean and idiomatic Rust standard. If you prefer exact Kysely naming, you can also use `.r#where(...)` or `.where_(...)`.
 
 ### Insert
 

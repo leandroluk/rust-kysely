@@ -77,8 +77,23 @@ impl CreateIndexBuilder {
     }
 
     /// Specifies a partial index `WHERE` filter.
+    ///
+    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
     // @spec REQ-DDL-007
-    pub fn where_(mut self, expr: impl Expression) -> Self {
+    #[inline]
+    pub fn where_(self, expr: impl Expression) -> Self {
+        self.r#where(expr)
+    }
+
+    /// Canonical Rust alias for partial index `WHERE` filter.
+    #[inline]
+    pub fn filter(self, expr: impl Expression) -> Self {
+        self.r#where(expr)
+    }
+
+    /// Specifies a partial index `WHERE` filter using raw identifier `r#where`.
+    // @spec REQ-DDL-007
+    pub fn r#where(mut self, expr: impl Expression) -> Self {
         self.node.where_clause = Some(expr.to_operation_node());
         self
     }

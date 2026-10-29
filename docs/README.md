@@ -1,3 +1,9 @@
+<div align="center">
+  <img src="assets/social-preview.png" alt="rust-kysely" width="100%" />
+</div>
+
+<br/>
+
 # rust-kysely Documentation
 
 <div align="center">
@@ -87,6 +93,7 @@ In the Rust ecosystem:
 
 | Concept | TypeScript Kysely | `rust-kysely` (Pure Rust) |
 | :--- | :--- | :--- |
+| **`WHERE` filtering** | `.where('age', '>=', 18)` | `.filter("age", ">=", 18)` *(or `.r#where(...)` / `.where_(...)`)* |
 | **AST Tree** | `OperationNode` (JS plain objects) | `OperationNode` enum with `Cow<'static, str>` & `SmallVec` |
 | **Query Builders** | `SelectQueryBuilder<DB, TB, O>` | `SelectQueryBuilder<T>` (builder pattern) |
 | **Raw SQL** | `sql\`SELECT ${x}\`` template literal | `sql("SELECT ").append(x)` via `RawBuilder` |
@@ -95,6 +102,11 @@ In the Rust ecosystem:
 | **Drivers** | `Driver` with `acquireConnection()` | `#[async_trait] pub trait Driver: Send + Sync` |
 | **Advisory Locks** | PostgreSQL `pg_advisory_lock` (CRC32/FNV) | `3853314791062309107` (exact 64-bit Kysely migration lock) |
 | **Dialects** | Postgres, MySQL, MSSQL, SQLite, Libsql | Postgres, MySQL, MSSQL, SQLite, PGlite |
+
+> [!NOTE]
+> **Why `.filter(...)` instead of `.where(...)`?**  
+> In Rust, `where` is a reserved keyword utilized by the compiler for generic trait bounds (e.g., `fn foo<T>() where T: Clone`).  
+> `rust-kysely` provides **`.filter(...)`** as the idiomatic, ergonomic Rust standard (following Rust iterator and ORM conventions). For strict 1:1 parity with SQL, the raw identifier **`.r#where(...)`** and the trailing-underscore alias **`.where_(...)`** are also fully supported across all query builders.
 
 ---
 

@@ -8,7 +8,7 @@
 
 The `SelectQueryBuilder` lets you compose arbitrarily complex queries:
 
-### Joins
+### Joins & Filtering
 
 ```rust
 let query = db
@@ -16,11 +16,15 @@ let query = db
     .inner_join("posts", "posts.user_id", "users.id")
     .left_join("profiles", "profiles.user_id", "users.id")
     .select(["users.name", "posts.title", "profiles.avatar_url"])
-    .where_("users.is_active", "=", true);
+    .filter("users.is_active", "=", true);
 
 let compiled = query.compile();
 println!("SQL: {}", compiled.sql);
 ```
+
+> [!NOTE]
+> **Rust Reserved Keyword: `where`**  
+> In TypeScript Kysely, queries use `.where(...)`. Because `where` is a keyword in Rust, `rust-kysely` provides **`.filter(...)`** as the idiomatic choice. You can also write **`.r#where(...)`** (raw identifier) or **`.where_(...)`**.
 
 ### Common Table Expressions (CTEs) & Subqueries
 
@@ -28,7 +32,7 @@ println!("SQL: {}", compiled.sql);
 let active_users = db
     .select_from("users")
     .select(["id", "name"])
-    .where_("status", "=", "active");
+    .filter("status", "=", "active");
 
 let query = db
     .with("active_users", active_users)

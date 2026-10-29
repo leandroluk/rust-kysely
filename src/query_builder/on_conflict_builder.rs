@@ -100,7 +100,30 @@ impl OnConflictBuilder {
     }
 
     /// Adds a `WHERE col OP val` filter to the conflict update clause.
+    ///
+    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
     pub fn where_(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Canonical Rust alias for SQL `WHERE col OP val` filter on conflict updates.
+    #[inline]
+    pub fn filter(
+        self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        self.r#where(col, operator, val)
+    }
+
+    /// Adds a `WHERE col OP val` filter to the conflict update clause using raw identifier `r#where`.
+    pub fn r#where(
         mut self,
         col: impl Into<CompactString>,
         operator: impl Into<CompactString>,
@@ -112,6 +135,16 @@ impl OnConflictBuilder {
             cond.to_operation_node(),
         ))));
         self
+    }
+
+    /// Canonical Rust alias for arbitrary boolean expressions in conflict `WHERE`.
+    #[inline]
+    pub fn filter_expr<F, E, T>(self, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        self.where_expr(cb)
     }
 
     /// Adds an arbitrary boolean expression to the conflict `WHERE` clause via a callback.

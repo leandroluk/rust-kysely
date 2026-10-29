@@ -37,6 +37,7 @@
 ## Contents
 - [Getting Started](#getting-started)
 - [Why rust-kysely?](#why-rust-kysely)
+- [TypeScript Kysely vs Rust Kysely (Why `.filter(...)`?)](#typescript-kysely-vs-rust-kysely)
 - [Architecture Blueprint](#architecture-blueprint)
 - [Dialect Matrix](#dialect-matrix)
 - [Feature Highlights](#feature-highlights)
@@ -70,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let users = db
         .select_from("users")
         .select(["id", "name", "email"])
-        .where_("is_active", "=", true)
+        .filter("is_active", "=", true)
         .order_by("created_at", "DESC")
         .limit(10)
         .execute()
@@ -100,6 +101,27 @@ In Rust:
 - **0% procedural macros**: No `proc-macro`, no `syn`, no `quote`.
 - **Fast compiles**: Pure runtime AST trees with Copy-on-Write (`Cow<'static, str>`) and stack optimizations (`CompactString`, `SmallVec`).
 - **Extensible**: Full plugin pipeline (`CamelCasePlugin`, `DeduplicateJoinsPlugin`, `WithSchemaPlugin`) and schema introspection.
+
+---
+
+## TypeScript Kysely vs Rust Kysely
+
+| Concept | TypeScript Kysely | `rust-kysely` (Pure Rust) |
+| :--- | :--- | :--- |
+| **`WHERE` filtering** | `.where('age', '>=', 18)` | `.filter("age", ">=", 18)` *(or `.r#where(...)` / `.where_(...)`)* |
+| **AST Tree** | `OperationNode` (JS plain objects) | `OperationNode` enum with `Cow<'static, str>` & `SmallVec` |
+| **Query Builders** | `SelectQueryBuilder<DB, TB, O>` | `SelectQueryBuilder<T>` (builder pattern) |
+| **Raw SQL** | `sql\`SELECT ${x}\`` template literal | `sql("SELECT ").append(x)` via `RawBuilder` |
+| **Expression Builder** | `eb => eb.and([...])` | `ExpressionBuilder::new()` or `eb.and(...)` closures |
+| **Plugins** | `KyselyPlugin` interface | `#[async_trait] pub trait KyselyPlugin: Send + Sync` |
+| **Drivers** | `Driver` with `acquireConnection()` | `#[async_trait] pub trait Driver: Send + Sync` |
+| **Advisory Locks** | PostgreSQL `pg_advisory_lock` (CRC32/FNV) | `3853314791062309107` (exact 64-bit Kysely migration lock) |
+| **Dialects** | Postgres, MySQL, MSSQL, SQLite, Libsql | Postgres, MySQL, MSSQL, SQLite, PGlite |
+
+> [!NOTE]
+> **Why `.filter(...)` instead of `.where(...)`?**  
+> In Rust, `where` is a strictly reserved language keyword for generic trait bounds (e.g. `fn query<T>() where T: Send`).  
+> Rather than forcing cumbersome syntax, `rust-kysely` provides **`.filter(...)`** as the first-class, idiomatic Rust API (matching Rust's standard iterators). For 100% syntactic parity with Kysely, **`.r#where(...)`** (via Rust's raw identifier feature) and the alias **`.where_(...)`** are also fully supported.
 
 ---
 
