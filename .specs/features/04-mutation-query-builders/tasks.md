@@ -9,7 +9,7 @@
 - **Done when**: Single-row insert compiles to `INSERT INTO table (cols) VALUES (?)` with parameters.
 - **Gate**: `cargo test test_insert_single_row`
 
-### TASK-MUT-002: Implement values, values_batch, and values_record
+### TASK-MUT-002: Implement values, values_batch, and values_record [x]
 - **REQ**: REQ-MUT-003, REQ-MUT-004
 - **Symbols**: `RowValues`, `.values()`, `.values_batch()`, `.values_record()`
 - **What**: Implement multi-row insert helpers, closure row builders, and serde struct serialization into insert columns and values.

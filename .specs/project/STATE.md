@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 4 (Mutation Query Builders: Insert, Update, Delete) — Execute Phase
 - **Active Feature**: [04-mutation-query-builders](../features/04-mutation-query-builders/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-MUT-002
+- **Active Task**: TASK-MUT-003
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 (`01-core-ast-compiler`), Milestone 2 (`02-expressions-raw-sql`), e Milestone 3 (`03-select-query-builder`) implementadas integralmente com 100% dos requisitos REQ-AST-001..010, REQ-EXPR-001..010 e REQ-SEL-001..010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 4 (`TASK-MUT-001` a `TASK-MUT-007`).
-- 35 testes de integração e unitários passando em 0.00s.
+- 36 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~274MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-MUT-002 complete. Gate: 36/36 pass. [REQ-MUT-003] [REQ-MUT-004]
 - 2026-10-29 TASK-MUT-001 complete. Gate: 35/35 pass. [REQ-MUT-001] [REQ-MUT-002]
 - 2026-10-29 Milestone 4 designed: design.md and tasks.md created. [REQ-MUT-001..010]
 - 2026-10-29 TASK-SEL-007 complete. Gate: 34/34 pass. Milestone 3 100% Complete! [REQ-SEL-001..010]
@@ -37,7 +38,7 @@
 
 ## Todos
 - [x] TASK-MUT-001: Implement InsertQueryBuilder and chained set method — Execute phase
-- [ ] TASK-MUT-002: Implement values, values_batch, and values_record — Execute phase
+- [x] TASK-MUT-002: Implement values, values_batch, and values_record — Execute phase
 - [ ] TASK-MUT-003: Implement OnConflictBuilder and PostgreSQL upsert — Execute phase
 - [ ] TASK-MUT-004: Implement UpdateQueryBuilder with joins and filters — Execute phase
 - [ ] TASK-MUT-005: Implement DeleteQueryBuilder with using joins and filters — Execute phase

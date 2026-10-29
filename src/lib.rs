@@ -20,7 +20,7 @@ pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
 pub use query_builder::{
     insert_into, select_from, InsertQueryBuilder, IntoGroupBy, IntoOrderByExpr, IntoOrderDirection,
-    JoinBuilder, SelectQueryBuilder,
+    IntoRowValues, JoinBuilder, RowValues, SelectQueryBuilder,
 };
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,

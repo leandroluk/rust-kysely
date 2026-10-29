@@ -258,6 +258,36 @@ impl<T: IntoValue> IntoValue for Option<T> {
     }
 }
 
+#[cfg(feature = "json")]
+impl From<serde_json::Value> for Value {
+    fn from(v: serde_json::Value) -> Self {
+        match v {
+            serde_json::Value::Null => Value::Null,
+            serde_json::Value::Bool(b) => Value::Bool(b),
+            serde_json::Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    Value::I64(i)
+                } else if let Some(f) = n.as_f64() {
+                    Value::F64(f)
+                } else {
+                    Value::Null
+                }
+            }
+            serde_json::Value::String(s) => Value::Text(CompactString::from(s)),
+            serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+                Value::Text(CompactString::from(v.to_string()))
+            }
+        }
+    }
+}
+
+#[cfg(feature = "json")]
+impl IntoValue for serde_json::Value {
+    fn into_value(self) -> Value {
+        Value::from(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
