@@ -27,7 +27,7 @@
 - **Done when**: Executor compiles and executes queries against a driver, correctly returning `Option<Row>` or first scalar.
 - **Gate**: `cargo test test_query_executor`
 
-### TASK-DRV-004: Implement Kysely client struct and builder execution chaining
+### TASK-DRV-004: Implement Kysely client struct and builder execution chaining [x]
 - **REQ**: REQ-EXEC-003, REQ-EXEC-004, REQ-EXEC-006
 - **Symbols**: `Kysely`, `Dialect`, `.execute()`, `.execute_take_first()`, `.execute_into()`
 - **What**: Implement main `Kysely` facade and connect `Arc<dyn QueryExecutor>` to `SelectQueryBuilder`, `InsertQueryBuilder`, `UpdateQueryBuilder`, `DeleteQueryBuilder`.

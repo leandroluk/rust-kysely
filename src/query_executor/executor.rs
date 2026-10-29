@@ -44,9 +44,19 @@ pub trait QueryExecutor: Send + Sync {
             DriverError::ExecutionFailed("Expected at least one row, but query returned none".into())
         })
     }
+}
 
+/// Extension trait providing generic convenience execution helpers for any `QueryExecutor`.
+// @spec REQ-EXEC-008
+#[async_trait]
+pub trait QueryExecutorExt {
     /// Executes a compiled query and returns the first scalar value of the first row.
-    async fn execute_take_first_val<T: FromRowValue>(&self, query: &CompiledQuery) -> Result<Option<T>, DriverError> {
+    async fn execute_take_first_val<T: FromRowValue + Send>(&self, query: &CompiledQuery) -> Result<Option<T>, DriverError>;
+}
+
+#[async_trait]
+impl<E: ?Sized + QueryExecutor> QueryExecutorExt for E {
+    async fn execute_take_first_val<T: FromRowValue + Send>(&self, query: &CompiledQuery) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first(query).await? {
             let val = row.get_by_index::<T>(0).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(val))

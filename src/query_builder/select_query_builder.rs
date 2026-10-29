@@ -11,15 +11,32 @@ use crate::operation_node::{
     OrderByNode, OrderDirection, OrderNulls, OrNode, ReferenceNode, SelectQueryNode, SelectionNode,
     SetOperationNode, SetOperator, ValueNode, WhereNode, WithNode,
 };
+use crate::driver::DriverError;
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
+use crate::query_executor::{QueryExecutor, QueryResult, Row};
 
 /// Fluent query builder for SQL SELECT statements.
 // @spec REQ-SEL-001
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Clone, Default)]
 pub struct SelectQueryBuilder {
     pub(crate) node: Arc<SelectQueryNode>,
+    pub(crate) executor: Option<Arc<dyn QueryExecutor>>,
+}
+
+impl std::fmt::Debug for SelectQueryBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SelectQueryBuilder")
+            .field("node", &self.node)
+            .finish()
+    }
+}
+
+impl PartialEq for SelectQueryBuilder {
+    fn eq(&self, other: &Self) -> bool {
+        self.node == other.node
+    }
 }
 
 impl SelectQueryBuilder {
@@ -30,7 +47,71 @@ impl SelectQueryBuilder {
 
     /// Creates a builder wrapping an existing AST node.
     pub fn from_node(node: Arc<SelectQueryNode>) -> Self {
-        Self { node }
+        Self {
+            node,
+            executor: None,
+        }
+    }
+
+    /// Attaches an executor to the query builder.
+    pub fn with_executor(mut self, executor: Arc<dyn QueryExecutor>) -> Self {
+        self.executor = Some(executor);
+        self
+    }
+
+    /// Returns a reference to the executor if attached.
+    pub fn executor(&self) -> Option<&Arc<dyn QueryExecutor>> {
+        self.executor.as_ref()
+    }
+
+    /// Executes the query and returns the `QueryResult`.
+    // @spec REQ-EXEC-004
+    pub async fn execute(&self) -> Result<QueryResult, DriverError> {
+        let executor = self.executor.as_ref().ok_or_else(|| {
+            DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
+        })?;
+        executor.execute_node(&OperationNode::SelectQuery((*self.node).clone())).await
+    }
+
+    /// Executes the query and returns the first row, if any.
+    // @spec REQ-EXEC-007
+    pub async fn execute_take_first(&self) -> Result<Option<Row>, DriverError> {
+        let executor = self.executor.as_ref().ok_or_else(|| {
+            DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
+        })?;
+        executor.execute_node_take_first(&OperationNode::SelectQuery((*self.node).clone())).await
+    }
+
+    /// Executes the query and returns the first row, or returns an error if empty.
+    // @spec REQ-EXEC-007
+    pub async fn execute_take_first_or_throw(&self) -> Result<Row, DriverError> {
+        let executor = self.executor.as_ref().ok_or_else(|| {
+            DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
+        })?;
+        executor.execute_node_take_first_or_throw(&OperationNode::SelectQuery((*self.node).clone())).await
+    }
+
+    /// Executes the query and deserializes rows into a `Vec<T>`.
+    // @spec REQ-EXEC-006
+    #[cfg(feature = "json")]
+    pub async fn execute_into<T: serde::de::DeserializeOwned>(&self) -> Result<Vec<T>, DriverError> {
+        let res = self.execute().await?;
+        res.rows
+            .into_iter()
+            .map(|r| r.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string())))
+            .collect()
+    }
+
+    /// Executes the query and deserializes the first row into `Option<T>`.
+    // @spec REQ-EXEC-006
+    #[cfg(feature = "json")]
+    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, DriverError> {
+        if let Some(row) = self.execute_take_first().await? {
+            let record = row.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Appends projections to the selection list using heterogeneous tuples, arrays, or closures.

@@ -4,6 +4,6 @@ pub mod executor;
 pub mod result;
 pub mod row;
 
-pub use executor::{DefaultQueryExecutor, QueryExecutor, SingleConnectionExecutor};
+pub use executor::{DefaultQueryExecutor, QueryExecutor, QueryExecutorExt, SingleConnectionExecutor};
 pub use result::QueryResult;
 pub use row::{ColumnError, FromRowValue, Row};

@@ -7,6 +7,7 @@
 pub mod dialect;
 pub mod driver;
 pub mod expression;
+pub mod kysely;
 pub mod operation_node;
 pub mod parser;
 pub mod query_builder;
@@ -15,10 +16,12 @@ pub mod query_executor;
 pub mod raw_builder;
 pub mod util;
 
-pub use driver::{DatabaseConnection, Driver, DriverError};
+pub use dialect::{CustomDialect, Dialect};
 #[cfg(feature = "postgres")]
 pub use dialect::PostgresQueryCompiler;
+pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
+pub use kysely::Kysely;
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
 pub use query_builder::{
@@ -30,8 +33,8 @@ pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
 pub use query_executor::{
-    ColumnError, DefaultQueryExecutor, FromRowValue, QueryExecutor, QueryResult, Row,
-    SingleConnectionExecutor,
+    ColumnError, DefaultQueryExecutor, FromRowValue, QueryExecutor, QueryExecutorExt, QueryResult,
+    Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
 pub use util::QueryId;
