@@ -5,6 +5,7 @@ use compact_str::CompactString;
 
 use crate::driver::{Driver, DriverError};
 use crate::parser::IntoTableSource;
+use crate::plugin::KyselyPlugin;
 use crate::query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
     SelectQueryBuilder, UpdateQueryBuilder,
@@ -41,11 +42,12 @@ impl IsolationLevel {
 }
 
 /// Builder configuring and executing database transactions.
-// @spec REQ-EXEC-009
+// @spec REQ-EXEC-009, REQ-PLUG-001
 pub struct TransactionBuilder {
     driver: Arc<dyn Driver>,
     compiler: Arc<dyn QueryCompiler>,
     isolation_level: Option<IsolationLevel>,
+    plugins: Vec<Arc<dyn KyselyPlugin>>,
 }
 
 impl TransactionBuilder {
@@ -55,6 +57,21 @@ impl TransactionBuilder {
             driver,
             compiler,
             isolation_level: None,
+            plugins: Vec::new(),
+        }
+    }
+
+    /// Creates a new `TransactionBuilder` with inherited plugins.
+    pub fn with_plugins(
+        driver: Arc<dyn Driver>,
+        compiler: Arc<dyn QueryCompiler>,
+        plugins: Vec<Arc<dyn KyselyPlugin>>,
+    ) -> Self {
+        Self {
+            driver,
+            compiler,
+            isolation_level: None,
+            plugins,
         }
     }
 
@@ -86,9 +103,10 @@ impl TransactionBuilder {
         }
 
         let conn_arc = Arc::new(tokio::sync::Mutex::new(Some(conn)));
-        let executor = Arc::new(SingleConnectionExecutor::new(
+        let executor = Arc::new(SingleConnectionExecutor::with_plugins_list(
             Arc::clone(&conn_arc),
             Arc::clone(&self.compiler),
+            self.plugins.clone(),
         ));
 
         let trx = Transaction { executor };

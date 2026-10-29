@@ -12,6 +12,7 @@ pub mod kysely;
 pub mod migration;
 pub mod operation_node;
 pub mod parser;
+pub mod plugin;
 pub mod query_builder;
 pub mod query_compiler;
 pub mod query_executor;
@@ -39,6 +40,7 @@ pub use migration::{
 };
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
+pub use plugin::KyselyPlugin;
 pub use query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
     IntoGroupBy, IntoOrderByExpr, IntoOrderDirection, IntoRowValues, JoinBuilder, OnConflictBuilder,

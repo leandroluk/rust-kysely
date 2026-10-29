@@ -5,9 +5,11 @@ use async_trait::async_trait;
 
 use crate::driver::{DatabaseConnection, Driver, DriverError};
 use crate::operation_node::OperationNode;
+use crate::plugin::KyselyPlugin;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 use crate::query_executor::result::QueryResult;
 use crate::query_executor::row::{FromRowValue, Row};
+use crate::util::QueryId;
 
 /// Async trait coordinating database query compilation and execution.
 // @spec REQ-EXEC-004, REQ-EXEC-007, REQ-EXEC-008
@@ -67,16 +69,51 @@ impl<E: ?Sized + QueryExecutor> QueryExecutorExt for E {
 }
 
 /// Standard query executor utilizing a pooled driver and query compiler.
-// @spec REQ-EXEC-004
+// @spec REQ-EXEC-004, REQ-PLUG-001
 pub struct DefaultQueryExecutor {
     driver: Arc<dyn Driver>,
     compiler: Arc<dyn QueryCompiler>,
+    plugins: Vec<Arc<dyn KyselyPlugin>>,
 }
 
 impl DefaultQueryExecutor {
     /// Creates a new `DefaultQueryExecutor` with the specified driver and compiler.
     pub fn new(driver: Arc<dyn Driver>, compiler: Arc<dyn QueryCompiler>) -> Self {
-        Self { driver, compiler }
+        Self {
+            driver,
+            compiler,
+            plugins: Vec::new(),
+        }
+    }
+
+    /// Creates a new `DefaultQueryExecutor` with explicit plugins.
+    pub fn with_plugins_list(
+        driver: Arc<dyn Driver>,
+        compiler: Arc<dyn QueryCompiler>,
+        plugins: Vec<Arc<dyn KyselyPlugin>>,
+    ) -> Self {
+        Self {
+            driver,
+            compiler,
+            plugins,
+        }
+    }
+
+    /// Adds a plugin to this executor.
+    pub fn with_plugin(mut self, plugin: Arc<dyn KyselyPlugin>) -> Self {
+        self.plugins.push(plugin);
+        self
+    }
+
+    /// Adds multiple plugins to this executor.
+    pub fn with_plugins(mut self, plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>) -> Self {
+        self.plugins.extend(plugins);
+        self
+    }
+
+    /// Returns the active plugins.
+    pub fn plugins(&self) -> &[Arc<dyn KyselyPlugin>] {
+        &self.plugins
     }
 
     /// Returns a reference to the underlying driver.
@@ -88,16 +125,8 @@ impl DefaultQueryExecutor {
     pub fn compiler(&self) -> &Arc<dyn QueryCompiler> {
         &self.compiler
     }
-}
 
-#[async_trait]
-impl QueryExecutor for DefaultQueryExecutor {
-    async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
-        let compiled = self.compiler.compile(node);
-        self.execute_query(&compiled).await
-    }
-
-    async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+    async fn execute_raw_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
         let mut conn = self.driver.acquire_connection().await?;
         let res = conn.execute_query(query).await;
         let rel = self.driver.release_connection(conn).await;
@@ -107,11 +136,37 @@ impl QueryExecutor for DefaultQueryExecutor {
     }
 }
 
+#[async_trait]
+impl QueryExecutor for DefaultQueryExecutor {
+    async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
+        let query_id = QueryId::generate();
+        let mut current_node = Arc::new(node.clone());
+        for plugin in &self.plugins {
+            current_node = plugin.transform_query(current_node, query_id);
+        }
+        let compiled = self.compiler.compile(&current_node);
+        let mut res = self.execute_raw_query(&compiled).await?;
+        for plugin in self.plugins.iter().rev() {
+            res = plugin.transform_result(res, query_id).await?;
+        }
+        Ok(res)
+    }
+
+    async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        let mut res = self.execute_raw_query(query).await?;
+        for plugin in self.plugins.iter().rev() {
+            res = plugin.transform_result(res, query.query_id).await?;
+        }
+        Ok(res)
+    }
+}
+
 /// Query executor bound to a single active database connection (used during transactions).
-// @spec REQ-EXEC-009
+// @spec REQ-EXEC-009, REQ-PLUG-001
 pub struct SingleConnectionExecutor {
     connection: Arc<tokio::sync::Mutex<Option<Box<dyn DatabaseConnection>>>>,
     compiler: Arc<dyn QueryCompiler>,
+    plugins: Vec<Arc<dyn KyselyPlugin>>,
 }
 
 impl SingleConnectionExecutor {
@@ -123,28 +178,76 @@ impl SingleConnectionExecutor {
         Self {
             connection,
             compiler,
+            plugins: Vec::new(),
         }
+    }
+
+    /// Creates a new executor bound to a single connection with plugins.
+    pub fn with_plugins_list(
+        connection: Arc<tokio::sync::Mutex<Option<Box<dyn DatabaseConnection>>>>,
+        compiler: Arc<dyn QueryCompiler>,
+        plugins: Vec<Arc<dyn KyselyPlugin>>,
+    ) -> Self {
+        Self {
+            connection,
+            compiler,
+            plugins,
+        }
+    }
+
+    /// Adds a plugin to this executor.
+    pub fn with_plugin(mut self, plugin: Arc<dyn KyselyPlugin>) -> Self {
+        self.plugins.push(plugin);
+        self
+    }
+
+    /// Adds multiple plugins to this executor.
+    pub fn with_plugins(mut self, plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>) -> Self {
+        self.plugins.extend(plugins);
+        self
+    }
+
+    /// Returns the active plugins.
+    pub fn plugins(&self) -> &[Arc<dyn KyselyPlugin>] {
+        &self.plugins
     }
 
     /// Returns a reference to the query compiler.
     pub fn compiler(&self) -> &Arc<dyn QueryCompiler> {
         &self.compiler
     }
-}
 
-#[async_trait]
-impl QueryExecutor for SingleConnectionExecutor {
-    async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
-        let compiled = self.compiler.compile(node);
-        self.execute_query(&compiled).await
-    }
-
-    async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+    async fn execute_raw_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
         let mut lock = self.connection.lock().await;
         let conn = lock.as_mut().ok_or_else(|| {
             DriverError::ExecutionFailed("Database connection has already been released".into())
         })?;
         conn.execute_query(query).await
+    }
+}
+
+#[async_trait]
+impl QueryExecutor for SingleConnectionExecutor {
+    async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
+        let query_id = QueryId::generate();
+        let mut current_node = Arc::new(node.clone());
+        for plugin in &self.plugins {
+            current_node = plugin.transform_query(current_node, query_id);
+        }
+        let compiled = self.compiler.compile(&current_node);
+        let mut res = self.execute_raw_query(&compiled).await?;
+        for plugin in self.plugins.iter().rev() {
+            res = plugin.transform_result(res, query_id).await?;
+        }
+        Ok(res)
+    }
+
+    async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        let mut res = self.execute_raw_query(query).await?;
+        for plugin in self.plugins.iter().rev() {
+            res = plugin.transform_result(res, query.query_id).await?;
+        }
+        Ok(res)
     }
 }
 

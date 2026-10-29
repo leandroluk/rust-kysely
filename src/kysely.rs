@@ -6,6 +6,7 @@ use compact_str::CompactString;
 use crate::dialect::{DefaultAdapter, Dialect, DialectAdapter};
 use crate::driver::{Driver, DriverError};
 use crate::parser::IntoTableSource;
+use crate::plugin::KyselyPlugin;
 use crate::query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
     SelectQueryBuilder, UpdateQueryBuilder,
@@ -16,13 +17,14 @@ use crate::schema::SchemaModule;
 use crate::transaction::TransactionBuilder;
 
 /// Main Kysely database client orchestrating query building and execution.
-// @spec REQ-EXEC-003, REQ-EXEC-004
+// @spec REQ-EXEC-003, REQ-EXEC-004, REQ-PLUG-006
 #[derive(Clone)]
 pub struct Kysely {
     driver: Arc<dyn Driver>,
     compiler: Arc<dyn QueryCompiler>,
     executor: Arc<dyn QueryExecutor>,
     adapter: Arc<dyn DialectAdapter>,
+    plugins: Vec<Arc<dyn KyselyPlugin>>,
 }
 
 impl Kysely {
@@ -40,6 +42,7 @@ impl Kysely {
             compiler,
             executor,
             adapter,
+            plugins: Vec::new(),
         }
     }
 
@@ -57,6 +60,7 @@ impl Kysely {
             compiler,
             executor,
             adapter: Arc::new(DefaultAdapter),
+            plugins: Vec::new(),
         }
     }
 
@@ -64,6 +68,38 @@ impl Kysely {
     pub fn with_adapter(mut self, adapter: Arc<dyn DialectAdapter>) -> Self {
         self.adapter = adapter;
         self
+    }
+
+    /// Appends a plugin to this client's execution pipeline.
+    // @spec REQ-PLUG-006
+    pub fn with_plugin<P: KyselyPlugin + 'static>(mut self, plugin: P) -> Self {
+        self.plugins.push(Arc::new(plugin));
+        self.rebuild_executor();
+        self
+    }
+
+    /// Appends multiple plugins to this client's execution pipeline.
+    // @spec REQ-PLUG-006
+    pub fn with_plugins(
+        mut self,
+        plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>,
+    ) -> Self {
+        self.plugins.extend(plugins);
+        self.rebuild_executor();
+        self
+    }
+
+    fn rebuild_executor(&mut self) {
+        self.executor = Arc::new(DefaultQueryExecutor::with_plugins_list(
+            Arc::clone(&self.driver),
+            Arc::clone(&self.compiler),
+            self.plugins.clone(),
+        ));
+    }
+
+    /// Returns the active plugins.
+    pub fn plugins(&self) -> &[Arc<dyn KyselyPlugin>] {
+        &self.plugins
     }
 
     /// Returns a reference to the dialect adapter.
@@ -89,7 +125,11 @@ impl Kysely {
     /// Creates a transaction builder to configure and execute an atomic transaction.
     // @spec REQ-EXEC-009
     pub fn transaction(&self) -> TransactionBuilder {
-        TransactionBuilder::new(Arc::clone(&self.driver), Arc::clone(&self.compiler))
+        TransactionBuilder::with_plugins(
+            Arc::clone(&self.driver),
+            Arc::clone(&self.compiler),
+            self.plugins.clone(),
+        )
     }
 
     /// Returns the schema module for executing DDL operations.
