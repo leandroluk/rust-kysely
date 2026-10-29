@@ -50,6 +50,17 @@ pub trait OperationNodeTransformer {
             OperationNode::ColumnUpdate(n) => self.transform_column_update(n, &node),
             OperationNode::Values(n) => self.transform_values(n, &node),
             OperationNode::OnConflict(n) => self.transform_on_conflict(n, &node),
+
+            // DDL
+            OperationNode::CreateTable(n) => self.transform_create_table(n, &node),
+            OperationNode::AlterTable(n) => self.transform_alter_table(n, &node),
+            OperationNode::DropTable(n) => self.transform_drop_table(n, &node),
+            OperationNode::CreateIndex(n) => self.transform_create_index(n, &node),
+            OperationNode::DropIndex(n) => self.transform_drop_index(n, &node),
+            OperationNode::CreateView(n) => self.transform_create_view(n, &node),
+            OperationNode::DropView(n) => self.transform_drop_view(n, &node),
+            OperationNode::CreateType(n) => self.transform_create_type(n, &node),
+            OperationNode::DropType(n) => self.transform_drop_type(n, &node),
         }
     }
 
@@ -781,6 +792,87 @@ pub trait OperationNodeTransformer {
     fn transform_on_conflict(
         &mut self,
         _node: &OnConflictNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a CreateTableNode.
+    fn transform_create_table(
+        &mut self,
+        _node: &CreateTableNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms an AlterTableNode.
+    fn transform_alter_table(
+        &mut self,
+        _node: &AlterTableNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a DropTableNode.
+    fn transform_drop_table(
+        &mut self,
+        _node: &DropTableNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a CreateIndexNode.
+    fn transform_create_index(
+        &mut self,
+        _node: &CreateIndexNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a DropIndexNode.
+    fn transform_drop_index(
+        &mut self,
+        _node: &DropIndexNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a CreateViewNode.
+    fn transform_create_view(
+        &mut self,
+        _node: &CreateViewNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a DropViewNode.
+    fn transform_drop_view(
+        &mut self,
+        _node: &DropViewNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a CreateTypeNode.
+    fn transform_create_type(
+        &mut self,
+        _node: &CreateTypeNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        Arc::clone(orig)
+    }
+
+    /// Transforms a DropTypeNode.
+    fn transform_drop_type(
+        &mut self,
+        _node: &DropTypeNode,
         orig: &Arc<OperationNode>,
     ) -> Arc<OperationNode> {
         Arc::clone(orig)

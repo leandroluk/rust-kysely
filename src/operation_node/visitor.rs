@@ -45,6 +45,17 @@ pub trait OperationNodeVisitor {
             OperationNode::ColumnUpdate(n) => self.visit_column_update(n),
             OperationNode::Values(n) => self.visit_values(n),
             OperationNode::OnConflict(n) => self.visit_on_conflict(n),
+
+            // DDL
+            OperationNode::CreateTable(n) => self.visit_create_table(n),
+            OperationNode::AlterTable(n) => self.visit_alter_table(n),
+            OperationNode::DropTable(n) => self.visit_drop_table(n),
+            OperationNode::CreateIndex(n) => self.visit_create_index(n),
+            OperationNode::DropIndex(n) => self.visit_drop_index(n),
+            OperationNode::CreateView(n) => self.visit_create_view(n),
+            OperationNode::DropView(n) => self.visit_drop_view(n),
+            OperationNode::CreateType(n) => self.visit_create_type(n),
+            OperationNode::DropType(n) => self.visit_drop_type(n),
         }
     }
 
@@ -375,6 +386,33 @@ pub trait OperationNodeVisitor {
             self.visit_node(whr);
         }
     }
+
+    /// Visits a CreateTableNode.
+    fn visit_create_table(&mut self, _node: &CreateTableNode) {}
+
+    /// Visits an AlterTableNode.
+    fn visit_alter_table(&mut self, _node: &AlterTableNode) {}
+
+    /// Visits a DropTableNode.
+    fn visit_drop_table(&mut self, _node: &DropTableNode) {}
+
+    /// Visits a CreateIndexNode.
+    fn visit_create_index(&mut self, _node: &CreateIndexNode) {}
+
+    /// Visits a DropIndexNode.
+    fn visit_drop_index(&mut self, _node: &DropIndexNode) {}
+
+    /// Visits a CreateViewNode.
+    fn visit_create_view(&mut self, _node: &CreateViewNode) {}
+
+    /// Visits a DropViewNode.
+    fn visit_drop_view(&mut self, _node: &DropViewNode) {}
+
+    /// Visits a CreateTypeNode.
+    fn visit_create_type(&mut self, _node: &CreateTypeNode) {}
+
+    /// Visits a DropTypeNode.
+    fn visit_drop_type(&mut self, _node: &DropTypeNode) {}
 }
 
 /// Visitor that automatically maintains a parent node stack during traversal.

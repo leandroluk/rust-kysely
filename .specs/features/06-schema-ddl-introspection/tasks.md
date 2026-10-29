@@ -1,6 +1,6 @@
 # Tasks: 06 — Schema DDL Builders & PostgreSQL Introspection
 
-### TASK-DDL-001: Implement DDL AST Operation Nodes and Compiler Extensions
+### TASK-DDL-001: Implement DDL AST Operation Nodes and Compiler Extensions [x]
 - **REQ**: REQ-DDL-001, REQ-DDL-002, REQ-DDL-006, REQ-DDL-007, REQ-DDL-008, REQ-DDL-009
 - **Symbols**: `CreateTableNode`, `ColumnDefinitionNode`, `AlterTableNode`, `DropTableNode`, `CreateIndexNode`, `CreateViewNode`, `CreateTypeNode`, `OnModifyForeignAction`
 - **What**: Implement AST nodes for all DDL operations and extend `DefaultQueryCompiler` to compile DDL syntax with dialect quoting.

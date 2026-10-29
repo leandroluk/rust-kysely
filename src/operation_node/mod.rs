@@ -1,6 +1,7 @@
 //! Abstract Syntax Tree (AST) operation nodes for rust-kysely.
 
 pub mod clause_nodes;
+pub mod ddl_nodes;
 pub mod expression_nodes;
 pub mod query_nodes;
 pub mod terminal_nodes;
@@ -13,6 +14,7 @@ pub use clause_nodes::{
     OffsetNode, OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, SelectionNode,
     SetOperationNode, SetOperator, WhereNode, WithNode,
 };
+pub use ddl_nodes::*;
 pub use expression_nodes::{
     AliasNode, AndNode, BinaryOperationNode, CaseNode, CastNode, FunctionNode, OrNode, ParensNode,
     UnaryOperationNode, WhenNode,
@@ -114,4 +116,24 @@ pub enum OperationNode {
     Values(ValuesNode),
     /// ON CONFLICT clause node
     OnConflict(OnConflictNode),
+
+    // DDL
+    /// CREATE TABLE node
+    CreateTable(CreateTableNode),
+    /// ALTER TABLE node
+    AlterTable(AlterTableNode),
+    /// DROP TABLE node
+    DropTable(DropTableNode),
+    /// CREATE INDEX node
+    CreateIndex(CreateIndexNode),
+    /// DROP INDEX node
+    DropIndex(DropIndexNode),
+    /// CREATE VIEW node
+    CreateView(CreateViewNode),
+    /// DROP VIEW node
+    DropView(DropViewNode),
+    /// CREATE TYPE node
+    CreateType(CreateTypeNode),
+    /// DROP TYPE node
+    DropType(DropTypeNode),
 }

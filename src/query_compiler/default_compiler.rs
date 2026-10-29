@@ -111,6 +111,90 @@ impl<'a> CompilerVisitor<'a> {
         let placeholder = self.compiler.format_parameter_placeholder(self.parameters.len());
         self.append(&placeholder);
     }
+
+    fn visit_table_constraint(&mut self, constraint: &TableConstraintNode) {
+        match constraint {
+            TableConstraintNode::PrimaryKey { name, columns } => {
+                if let Some(n) = name {
+                    self.append("CONSTRAINT ");
+                    self.append(&self.compiler.format_identifier(n.as_str()));
+                    self.append(" ");
+                }
+                self.append("PRIMARY KEY (");
+                for (i, c) in columns.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.append(&self.compiler.format_identifier(c.as_str()));
+                }
+                self.append(")");
+            }
+            TableConstraintNode::ForeignKey {
+                name,
+                columns,
+                target_table,
+                target_columns,
+                on_delete,
+                on_update,
+            } => {
+                if let Some(n) = name {
+                    self.append("CONSTRAINT ");
+                    self.append(&self.compiler.format_identifier(n.as_str()));
+                    self.append(" ");
+                }
+                self.append("FOREIGN KEY (");
+                for (i, c) in columns.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.append(&self.compiler.format_identifier(c.as_str()));
+                }
+                self.append(") REFERENCES ");
+                self.append(&self.compiler.format_identifier(target_table.as_str()));
+                self.append(" (");
+                for (i, c) in target_columns.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.append(&self.compiler.format_identifier(c.as_str()));
+                }
+                self.append(")");
+                if let Some(on_del) = on_delete {
+                    self.append(" ON DELETE ");
+                    self.append(on_del.as_sql());
+                }
+                if let Some(on_upd) = on_update {
+                    self.append(" ON UPDATE ");
+                    self.append(on_upd.as_sql());
+                }
+            }
+            TableConstraintNode::Unique { name, columns } => {
+                if let Some(n) = name {
+                    self.append("CONSTRAINT ");
+                    self.append(&self.compiler.format_identifier(n.as_str()));
+                    self.append(" ");
+                }
+                self.append("UNIQUE (");
+                for (i, c) in columns.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.append(&self.compiler.format_identifier(c.as_str()));
+                }
+                self.append(")");
+            }
+            TableConstraintNode::Check { name, expr } => {
+                if let Some(n) = name {
+                    self.append("CONSTRAINT ");
+                    self.append(&self.compiler.format_identifier(n.as_str()));
+                    self.append(" ");
+                }
+                self.append("CHECK (");
+                self.visit_node(expr);
+                self.append(")");
+            }
+        }
+    }
 }
 
 impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
@@ -600,6 +684,249 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
             }
         }
     }
+
+    fn visit_create_table(&mut self, node: &CreateTableNode) {
+        self.append("CREATE ");
+        if node.temporary {
+            self.append("TEMPORARY ");
+        }
+        self.append("TABLE ");
+        if node.if_not_exists {
+            self.append("IF NOT EXISTS ");
+        }
+        self.visit_node(&node.name);
+        self.append(" (");
+
+        let mut first = true;
+        for col in &node.columns {
+            if !first {
+                self.append(", ");
+            }
+            first = false;
+
+            self.append(&self.compiler.format_identifier(col.name.as_str()));
+            self.append(" ");
+            self.append(col.data_type.as_str());
+
+            if col.is_primary_key {
+                self.append(" PRIMARY KEY");
+            }
+            if !col.is_nullable {
+                self.append(" NOT NULL");
+            }
+            if col.is_unique {
+                self.append(" UNIQUE");
+            }
+            if let Some(ref def) = col.default_to {
+                self.append(" DEFAULT ");
+                self.visit_node(def);
+            }
+            if let Some(ref chk) = col.check {
+                self.append(" CHECK (");
+                self.visit_node(chk);
+                self.append(")");
+            }
+            if let Some(ref r) = col.references {
+                self.append(" REFERENCES ");
+                self.append(&self.compiler.format_identifier(r.target_table.as_str()));
+                self.append(" (");
+                self.append(&self.compiler.format_identifier(r.target_column.as_str()));
+                self.append(")");
+                if let Some(on_del) = r.on_delete {
+                    self.append(" ON DELETE ");
+                    self.append(on_del.as_sql());
+                }
+                if let Some(on_upd) = r.on_update {
+                    self.append(" ON UPDATE ");
+                    self.append(on_upd.as_sql());
+                }
+            }
+        }
+
+        for constraint in &node.constraints {
+            if !first {
+                self.append(", ");
+            }
+            first = false;
+
+            self.visit_table_constraint(constraint);
+        }
+
+        self.append(")");
+    }
+
+    fn visit_alter_table(&mut self, node: &AlterTableNode) {
+        self.append("ALTER TABLE ");
+        self.visit_node(&node.table);
+        self.append(" ");
+
+        for (i, action) in node.actions.iter().enumerate() {
+            if i > 0 {
+                self.append(", ");
+            }
+            match action {
+                AlterTableAction::AddColumn(col) => {
+                    self.append("ADD COLUMN ");
+                    self.append(&self.compiler.format_identifier(col.name.as_str()));
+                    self.append(" ");
+                    self.append(col.data_type.as_str());
+                    if col.is_primary_key {
+                        self.append(" PRIMARY KEY");
+                    }
+                    if !col.is_nullable {
+                        self.append(" NOT NULL");
+                    }
+                    if col.is_unique {
+                        self.append(" UNIQUE");
+                    }
+                    if let Some(ref def) = col.default_to {
+                        self.append(" DEFAULT ");
+                        self.visit_node(def);
+                    }
+                }
+                AlterTableAction::DropColumn { name, if_exists } => {
+                    self.append("DROP COLUMN ");
+                    if *if_exists {
+                        self.append("IF EXISTS ");
+                    }
+                    self.append(&self.compiler.format_identifier(name.as_str()));
+                }
+                AlterTableAction::AlterColumnType { name, data_type } => {
+                    self.append("ALTER COLUMN ");
+                    self.append(&self.compiler.format_identifier(name.as_str()));
+                    self.append(" TYPE ");
+                    self.append(data_type.as_str());
+                }
+                AlterTableAction::RenameColumn { old_name, new_name } => {
+                    self.append("RENAME COLUMN ");
+                    self.append(&self.compiler.format_identifier(old_name.as_str()));
+                    self.append(" TO ");
+                    self.append(&self.compiler.format_identifier(new_name.as_str()));
+                }
+                AlterTableAction::AddConstraint(c) => {
+                    self.append("ADD ");
+                    self.visit_table_constraint(c);
+                }
+                AlterTableAction::DropConstraint { name, if_exists } => {
+                    self.append("DROP CONSTRAINT ");
+                    if *if_exists {
+                        self.append("IF EXISTS ");
+                    }
+                    self.append(&self.compiler.format_identifier(name.as_str()));
+                }
+            }
+        }
+    }
+
+    fn visit_drop_table(&mut self, node: &DropTableNode) {
+        self.append("DROP TABLE ");
+        if node.if_exists {
+            self.append("IF EXISTS ");
+        }
+        self.visit_node(&node.name);
+        if node.cascade {
+            self.append(" CASCADE");
+        }
+    }
+
+    fn visit_create_index(&mut self, node: &CreateIndexNode) {
+        self.append("CREATE ");
+        if node.unique {
+            self.append("UNIQUE ");
+        }
+        self.append("INDEX ");
+        if node.if_not_exists {
+            self.append("IF NOT EXISTS ");
+        }
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        self.append(" ON ");
+        self.visit_node(&node.table);
+        if let Some(ref method) = node.using_method {
+            self.append(" USING ");
+            self.append(method.as_str());
+        }
+        self.append(" (");
+        for (i, col) in node.columns.iter().enumerate() {
+            if i > 0 {
+                self.append(", ");
+            }
+            self.append(&self.compiler.format_identifier(col.as_str()));
+        }
+        self.append(")");
+        if let Some(ref whr) = node.where_clause {
+            self.append(" WHERE ");
+            self.visit_node(whr);
+        }
+    }
+
+    fn visit_drop_index(&mut self, node: &DropIndexNode) {
+        self.append("DROP INDEX ");
+        if node.if_exists {
+            self.append("IF EXISTS ");
+        }
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        if node.cascade {
+            self.append(" CASCADE");
+        }
+    }
+
+    fn visit_create_view(&mut self, node: &CreateViewNode) {
+        self.append("CREATE ");
+        if node.or_replace {
+            self.append("OR REPLACE ");
+        }
+        if node.materialized {
+            self.append("MATERIALIZED ");
+        }
+        self.append("VIEW ");
+        if node.if_not_exists {
+            self.append("IF NOT EXISTS ");
+        }
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        self.append(" AS ");
+        self.visit_node(&node.query);
+    }
+
+    fn visit_drop_view(&mut self, node: &DropViewNode) {
+        self.append("DROP ");
+        if node.materialized {
+            self.append("MATERIALIZED ");
+        }
+        self.append("VIEW ");
+        if node.if_exists {
+            self.append("IF EXISTS ");
+        }
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        if node.cascade {
+            self.append(" CASCADE");
+        }
+    }
+
+    fn visit_create_type(&mut self, node: &CreateTypeNode) {
+        self.append("CREATE TYPE ");
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        self.append(" AS ENUM (");
+        for (i, val) in node.enum_values.iter().enumerate() {
+            if i > 0 {
+                self.append(", ");
+            }
+            self.append("'");
+            self.append(&val.replace('\'', "''"));
+            self.append("'");
+        }
+        self.append(")");
+    }
+
+    fn visit_drop_type(&mut self, node: &DropTypeNode) {
+        self.append("DROP TYPE ");
+        if node.if_exists {
+            self.append("IF EXISTS ");
+        }
+        self.append(&self.compiler.format_identifier(node.name.as_str()));
+        if node.cascade {
+            self.append(" CASCADE");
+        }
+    }
 }
 
 #[cfg(test)]
@@ -637,5 +964,95 @@ mod tests {
         );
         assert_eq!(query.parameters, vec![Value::I64(18)]);
         assert!(query.query_id.raw() > 0);
+    }
+
+    #[test]
+    fn test_ddl_compilation() {
+        let compiler = DefaultQueryCompiler::new();
+
+        // 1. CREATE TABLE
+        let mut create_table = CreateTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        create_table.if_not_exists = true;
+
+        let mut id_col = ColumnDefinitionNode::new("id", "serial");
+        id_col.is_primary_key = true;
+        create_table.columns.push(id_col);
+
+        let mut email_col = ColumnDefinitionNode::new("email", "varchar(255)");
+        email_col.is_nullable = false;
+        email_col.is_unique = true;
+        create_table.columns.push(email_col);
+
+        let mut status_col = ColumnDefinitionNode::new("status", "varchar(50)");
+        status_col.default_to = Some(Arc::new(OperationNode::Value(ValueNode::new("active"))));
+        create_table.columns.push(status_col);
+
+        create_table.constraints.push(TableConstraintNode::ForeignKey {
+            name: Some("fk_user_org".into()),
+            columns: smallvec::smallvec!["org_id".into()],
+            target_table: "organizations".into(),
+            target_columns: smallvec::smallvec!["id".into()],
+            on_delete: Some(OnModifyForeignAction::Cascade),
+            on_update: None,
+        });
+
+        let q1 = compiler.compile(&OperationNode::CreateTable(create_table));
+        assert_eq!(
+            q1.sql,
+            "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" serial PRIMARY KEY, \"email\" varchar(255) NOT NULL UNIQUE, \"status\" varchar(50) DEFAULT ?, CONSTRAINT \"fk_user_org\" FOREIGN KEY (\"org_id\") REFERENCES \"organizations\" (\"id\") ON DELETE CASCADE)"
+        );
+
+        // 2. ALTER TABLE
+        let mut alter_table = AlterTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        alter_table.actions.push(AlterTableAction::AddColumn(ColumnDefinitionNode::new("age", "int4")));
+        alter_table.actions.push(AlterTableAction::DropColumn {
+            name: "deprecated".into(),
+            if_exists: true,
+        });
+        alter_table.actions.push(AlterTableAction::RenameColumn {
+            old_name: "old".into(),
+            new_name: "new".into(),
+        });
+
+        let q2 = compiler.compile(&OperationNode::AlterTable(alter_table));
+        assert_eq!(
+            q2.sql,
+            "ALTER TABLE \"users\" ADD COLUMN \"age\" int4, DROP COLUMN IF EXISTS \"deprecated\", RENAME COLUMN \"old\" TO \"new\""
+        );
+
+        // 3. DROP TABLE
+        let mut drop_table = DropTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        drop_table.if_exists = true;
+        drop_table.cascade = true;
+
+        let q3 = compiler.compile(&OperationNode::DropTable(drop_table));
+        assert_eq!(q3.sql, "DROP TABLE IF EXISTS \"users\" CASCADE");
+
+        // 4. CREATE INDEX
+        let mut create_idx = CreateIndexNode::new("users_email_idx", Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        create_idx.unique = true;
+        create_idx.columns.push("email".into());
+        create_idx.using_method = Some("btree".into());
+
+        let q4 = compiler.compile(&OperationNode::CreateIndex(create_idx));
+        assert_eq!(q4.sql, "CREATE UNIQUE INDEX \"users_email_idx\" ON \"users\" USING btree (\"email\")");
+
+        // 5. CREATE VIEW
+        let select_ast = Arc::new(OperationNode::SelectQuery(SelectQueryNode::new()));
+        let mut create_view = CreateViewNode::new("active_users", select_ast);
+        create_view.or_replace = true;
+        create_view.materialized = true;
+
+        let q5 = compiler.compile(&OperationNode::CreateView(create_view));
+        assert_eq!(q5.sql, "CREATE OR REPLACE MATERIALIZED VIEW \"active_users\" AS SELECT *");
+
+        // 6. CREATE TYPE
+        let mut create_type = CreateTypeNode::new("user_status");
+        create_type.enum_values.push("active".into());
+        create_type.enum_values.push("pending".into());
+        create_type.enum_values.push("deleted".into());
+
+        let q6 = compiler.compile(&OperationNode::CreateType(create_type));
+        assert_eq!(q6.sql, "CREATE TYPE \"user_status\" AS ENUM ('active', 'pending', 'deleted')");
     }
 }
