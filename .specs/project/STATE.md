@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 3 (Select Query Builder, Joins & Projections) — Em Execução
 - **Active Feature**: [03-select-query-builder](../features/03-select-query-builder/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-SEL-002
+- **Active Task**: TASK-SEL-003
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 e Milestone 2 implementadas integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 e REQ-EXPR-001 a REQ-EXPR-010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 3 (`TASK-SEL-001` a `TASK-SEL-007`).
-- 25 testes de integração e unitários passando em 0.00s.
+- 27 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~272MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-SEL-002 complete. Gate: 27/27 pass. [REQ-SEL-001] [REQ-SEL-002]
 - 2026-10-29 TASK-SEL-001 complete. Gate: 25/25 pass. [REQ-SEL-005] [REQ-SEL-006]
 - 2026-10-29 TASK-EXPR-007 complete. Gate: 24/24 pass. Footprint: 272 MB. [REQ-EXPR-001..010]
 - 2026-10-29 TASK-EXPR-006 complete. Gate: 23/23 pass. [REQ-EXPR-010]
@@ -36,7 +37,7 @@
 
 ## Todos
 - [x] TASK-SEL-001: Implement IntoSelections trait and tuple projections — Execute phase
-- [ ] TASK-SEL-002: Implement IntoTableSource and select_from constructor — Execute phase
+- [x] TASK-SEL-002: Implement IntoTableSource and select_from constructor — Execute phase
 - [ ] TASK-SEL-003: Implement join methods and JoinBuilder — Execute phase
 - [ ] TASK-SEL-004: Implement filtering methods (where_, where_ref, where_expr, or_where_*) — Execute phase
 - [ ] TASK-SEL-005: Implement grouping, having, sorting, and pagination — Execute phase

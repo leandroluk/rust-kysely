@@ -9,7 +9,7 @@
 - **Done when**: Single strings, arrays, and tuples of strings mixed with expressions convert into `SmallVec<[Arc<OperationNode>; 4]>`.
 - **Gate**: `cargo test test_into_selections`
 
-### TASK-SEL-002: Implement IntoTableSource and select_from constructor
+### TASK-SEL-002: Implement IntoTableSource and select_from constructor [x]
 - **REQ**: REQ-SEL-001, REQ-SEL-002
 - **Symbols**: `SelectQueryBuilder`, `select_from`, `IntoTableSource`
 - **What**: Implement `SelectQueryBuilder` skeleton and `select_from` supporting table names, `"table as alias"`, and subqueries.
