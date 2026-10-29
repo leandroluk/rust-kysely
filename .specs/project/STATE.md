@@ -1,17 +1,17 @@
 # Project State
 
 ## Status
-- **Current Milestone**: Initialization & Architectural Design (Milestone 1 Prep)
-- **Active Feature**: Specifying and Mapping Kysely Architecture to Pure Rust (`INSIGHT.md`)
+- **Current Milestone**: Milestone 1 (Core AST & Compilador PostgreSQL) — Pronto para execução
+- **Active Feature**: [01-core-ast-compiler](../features/01-core-ast-compiler/spec.md)
 - **Blockers**: None
 
 ## Cost
-- Initialized empty repository with Graph-Spec-Design pipeline.
-- Upstream Kysely cloned for direct AST, compiler, and API parity analysis.
+- Documentação completa do `.specs/` realizada (8 especificações formais de features com requisitos REQ-* mapeados).
+- Footprint control e harness de teste inicial validados (`target/` ~250MB, zero `.pdb`s descontrolados).
 
 ## Decisions (Recent 5)
-1. **Zero Macros Mandate**: Absolute elimination of proc-macros (`derive`, `macro_rules! DSLs`, or compile-time DB introspection) to keep compile times fast, error messages crystal clear, and IDE autocompletion fluid.
-2. **Postgres First**: Direct focus on PostgreSQL dialect, AST compiler (`PostgresQueryCompiler`), and `tokio-postgres` driver connection integration.
-3. **Closure Builders (`|eb| ...`)**: Adopting Rust closure builders to represent Kysely's fluent arrow functions for nested expressions, subqueries, and transactions.
-4. **Inspectable AST**: Porting Kysely's `OperationNode` hierarchy as clean Rust structs/enums wrapped in `Arc` with Copy-on-Write for fluent immutability.
-5. **Ergonomic Rows**: Supporting both dynamic type-safe `Row` (`row.get::<T>("col")?`) and typed deserialization (`.execute_into::<T>()`) without custom derives.
+1. **Documentação Integral do `.specs/`**: Especificadas todas as 8 fases do projeto cobrindo desde a AST até DDL, Migrations e Plugins, garantindo rastreabilidade total de requisitos (`REQ-AST-*` até `REQ-PLUG-*`).
+2. **Tuplas para `.select(...)` Heterogêneo**: Adotada a trait `IntoSelections` para suportar strings e expressões juntas em uma única chamada de `.select((col1, col2, expr))` sem quebrar o encadeamento.
+3. **Eliminação do `.into()` em Mutations**: Validações de inserção e atualização utilizam `val: impl IntoValue` com métodos `.set(col, val)` e closure builders `.values(|v| ...)`.
+4. **Target Footprint Discipline**: Símbolos `.pdb` suprimidos via `debug = 0`, `strip = "debuginfo"` e `incremental = false` em `.cargo/config.toml` e `Cargo.toml`.
+5. **Zero Macros Mandate**: Arquitetura 100% livre de proc-macros, garantindo tempos de compilação instantâneos e clareza no compilador.
