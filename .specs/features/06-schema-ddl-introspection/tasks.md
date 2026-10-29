@@ -54,7 +54,7 @@
 - **Done when**: `db.schema().create_table(...).execute().await` executes through the driver seamlessly.
 - **Gate**: `cargo test test_schema_module`
 
-### TASK-DDL-007: Implement PostgresIntrospector and schema metadata extraction
+### TASK-DDL-007: Implement PostgresIntrospector and schema metadata extraction [x]
 - **REQ**: REQ-DDL-010
 - **Symbols**: `PostgresIntrospector`, `DatabaseIntrospector`, `TableMetadata`, `ColumnMetadata`
 - **What**: Implement introspection querying `information_schema` and `pg_catalog` to extract table schemas, column data types, nullability, defaults, and primary/foreign keys.

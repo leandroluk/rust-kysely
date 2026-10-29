@@ -7,6 +7,7 @@
 pub mod dialect;
 pub mod driver;
 pub mod expression;
+pub mod introspection;
 pub mod kysely;
 pub mod operation_node;
 pub mod parser;
@@ -20,9 +21,15 @@ pub mod util;
 
 pub use dialect::{CustomDialect, Dialect};
 #[cfg(feature = "postgres")]
-pub use dialect::postgres::{PostgresConnection, PostgresDialect, PostgresDriver, PostgresQueryCompiler};
+pub use dialect::postgres::{
+    PostgresConnection, PostgresDialect, PostgresDriver, PostgresIntrospector,
+    PostgresQueryCompiler,
+};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
+pub use introspection::{
+    ColumnMetadata, DatabaseIntrospector, DatabaseMetadata, TableMetadata,
+};
 pub use kysely::Kysely;
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
