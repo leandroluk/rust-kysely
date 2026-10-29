@@ -1,4 +1,10 @@
 <div align="center">
+  <img src="docs/assets/social-preview.png" alt="rust-kysely" width="100%" />
+</div>
+
+<br/>
+
+<div align="center">
   <h1>rust-kysely</h1>
   <p><strong>Pure Rust, type-safe SQL query builder and runner faithfully ported from Kysely (TypeScript) without macros.</strong></p>
 </div>
