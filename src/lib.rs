@@ -40,7 +40,10 @@ pub use migration::{
 };
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
-pub use plugin::{to_camel_case, to_snake_case, CamelCaseOptions, CamelCasePlugin, KyselyPlugin};
+pub use plugin::{
+    to_camel_case, to_snake_case, CamelCaseOptions, CamelCasePlugin, DeduplicateJoinsPlugin,
+    KyselyPlugin,
+};
 pub use query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
     IntoGroupBy, IntoOrderByExpr, IntoOrderDirection, IntoRowValues, JoinBuilder, OnConflictBuilder,
