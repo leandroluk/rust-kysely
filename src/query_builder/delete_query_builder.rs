@@ -2,12 +2,14 @@
 
 use std::sync::Arc;
 use compact_str::CompactString;
+use smallvec::SmallVec;
 
 use crate::expression::{Expression, ExpressionBuilder};
 use crate::operation_node::{
-    AndNode, DeleteQueryNode, IntoValue, JoinNode, JoinType, OperationNode, OrNode, WhereNode,
+    AndNode, ColumnNode, DeleteQueryNode, IntoValue, JoinNode, JoinType, OperationNode, OrNode,
+    SelectionNode, WhereNode,
 };
-use crate::parser::IntoTableSource;
+use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 
@@ -182,6 +184,27 @@ impl DeleteQueryBuilder {
         let eb = ExpressionBuilder::new();
         let cond = eb.cmp_ref(col1, operator, col2);
         self.append_or_where(cond.to_operation_node());
+        self
+    }
+
+    /// Appends selections to the `RETURNING` clause.
+    // @spec REQ-MUT-010
+    pub fn returning(mut self, selections: impl IntoSelections) -> Self {
+        let sel_nodes = selections.into_selections();
+        let q = DeleteQueryNode::clone_mut(&mut self.node);
+        let ret = q.returning.get_or_insert_with(SmallVec::new);
+        ret.extend(sel_nodes);
+        self
+    }
+
+    /// Selects all columns in the `RETURNING` clause (`RETURNING *`).
+    // @spec REQ-MUT-010
+    pub fn returning_all(mut self) -> Self {
+        let q = DeleteQueryNode::clone_mut(&mut self.node);
+        let ret = q.returning.get_or_insert_with(SmallVec::new);
+        ret.push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("*"))),
+        ))));
         self
     }
 

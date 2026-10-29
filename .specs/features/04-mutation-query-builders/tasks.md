@@ -45,7 +45,7 @@
 - **Done when**: DELETE query with USING and WHERE compiles accurately to SQL.
 - **Gate**: `cargo test test_delete_query`
 
-### TASK-MUT-006: Implement returning and returning_all on all mutation builders
+### TASK-MUT-006: Implement returning and returning_all on all mutation builders [x]
 - **REQ**: REQ-MUT-010
 - **Symbols**: `.returning()`, `.returning_all()`
 - **What**: Add `.returning(selections: impl IntoSelections)` and `.returning_all()` to `InsertQueryBuilder`, `UpdateQueryBuilder`, and `DeleteQueryBuilder`.

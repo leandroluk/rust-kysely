@@ -6,10 +6,10 @@ use smallvec::SmallVec;
 
 use crate::expression::Expression;
 use crate::operation_node::{
-    ColumnNode, InsertQueryNode, IntoValue, OperationNode, PrimitiveValueListNode, Value,
-    ValuesNode,
+    ColumnNode, InsertQueryNode, IntoValue, OperationNode, PrimitiveValueListNode, SelectionNode,
+    Value, ValuesNode,
 };
-use crate::parser::IntoTableSource;
+use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::on_conflict_builder::OnConflictBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 
@@ -144,6 +144,27 @@ impl InsertQueryBuilder {
         let builder = cb(OnConflictBuilder::new());
         let q = InsertQueryNode::clone_mut(&mut self.node);
         q.on_conflict = Some(Arc::new(OperationNode::OnConflict(builder.build())));
+        self
+    }
+
+    /// Appends selections to the `RETURNING` clause.
+    // @spec REQ-MUT-010
+    pub fn returning(mut self, selections: impl IntoSelections) -> Self {
+        let sel_nodes = selections.into_selections();
+        let q = InsertQueryNode::clone_mut(&mut self.node);
+        let ret = q.returning.get_or_insert_with(SmallVec::new);
+        ret.extend(sel_nodes);
+        self
+    }
+
+    /// Selects all columns in the `RETURNING` clause (`RETURNING *`).
+    // @spec REQ-MUT-010
+    pub fn returning_all(mut self) -> Self {
+        let q = InsertQueryNode::clone_mut(&mut self.node);
+        let ret = q.returning.get_or_insert_with(SmallVec::new);
+        ret.push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("*"))),
+        ))));
         self
     }
 
@@ -370,6 +391,56 @@ mod tests {
                 Value::from("alice@example.com"),
                 Value::from(true),
             ]
+        );
+    }
+
+    #[test]
+    fn test_mutation_returning() {
+        let compiler = PostgresQueryCompiler::new();
+
+        // 1. INSERT RETURNING
+        let q_ins = insert_into("users")
+            .set("name", "Diana")
+            .returning(["id", "created_at"])
+            .compile(&compiler);
+
+        assert_eq!(
+            q_ins.sql,
+            "INSERT INTO \"users\" (\"name\") VALUES ($1) RETURNING \"id\", \"created_at\""
+        );
+        assert_eq!(q_ins.parameters, vec![Value::from("Diana")]);
+
+        let q_ins_all = insert_into("users")
+            .set("name", "Diana")
+            .returning_all()
+            .compile(&compiler);
+
+        assert_eq!(
+            q_ins_all.sql,
+            "INSERT INTO \"users\" (\"name\") VALUES ($1) RETURNING *"
+        );
+
+        // 2. UPDATE RETURNING
+        let q_upd = crate::query_builder::update_table("users")
+            .set("active", false)
+            .where_("id", "=", 10)
+            .returning(["id", "active"])
+            .compile(&compiler);
+
+        assert_eq!(
+            q_upd.sql,
+            "UPDATE \"users\" SET \"active\" = $1 WHERE \"id\" = $2 RETURNING \"id\", \"active\""
+        );
+
+        // 3. DELETE RETURNING
+        let q_del = crate::query_builder::delete_from("users")
+            .where_("id", "=", 10)
+            .returning_all()
+            .compile(&compiler);
+
+        assert_eq!(
+            q_del.sql,
+            "DELETE FROM \"users\" WHERE \"id\" = $1 RETURNING *"
         );
     }
 }
