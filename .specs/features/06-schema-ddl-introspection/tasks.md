@@ -18,7 +18,7 @@
 - **Done when**: Tables and column definitions fluently produce valid `CreateTableNode` AST and compile accurately.
 - **Gate**: `cargo test test_create_table_builder`
 
-### TASK-DDL-003: Implement Table Constraints on CreateTableBuilder
+### TASK-DDL-003: Implement Table Constraints on CreateTableBuilder [x]
 - **REQ**: REQ-DDL-003
 - **Symbols**: `add_primary_key_constraint`, `add_foreign_key_constraint`, `add_unique_constraint`, `add_check_constraint`
 - **What**: Implement multi-column table-level constraints for primary keys, foreign keys, unique keys, and checks.

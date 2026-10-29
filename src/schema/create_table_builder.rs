@@ -78,6 +78,72 @@ impl CreateTableBuilder {
         self
     }
 
+    /// Adds a table-level PRIMARY KEY constraint.
+    // @spec REQ-DDL-003
+    pub fn add_primary_key_constraint(
+        mut self,
+        name: impl Into<CompactString>,
+        columns: impl IntoIterator<Item = impl Into<CompactString>>,
+    ) -> Self {
+        self.node.constraints.push(crate::operation_node::TableConstraintNode::PrimaryKey {
+            name: Some(name.into()),
+            columns: columns.into_iter().map(Into::into).collect(),
+        });
+        self
+    }
+
+    /// Adds a table-level UNIQUE constraint.
+    // @spec REQ-DDL-003
+    pub fn add_unique_constraint(
+        mut self,
+        name: impl Into<CompactString>,
+        columns: impl IntoIterator<Item = impl Into<CompactString>>,
+    ) -> Self {
+        self.node.constraints.push(crate::operation_node::TableConstraintNode::Unique {
+            name: Some(name.into()),
+            columns: columns.into_iter().map(Into::into).collect(),
+        });
+        self
+    }
+
+    /// Adds a table-level CHECK constraint.
+    // @spec REQ-DDL-003
+    pub fn add_check_constraint(
+        mut self,
+        name: impl Into<CompactString>,
+        expr: impl crate::expression::Expression,
+    ) -> Self {
+        self.node.constraints.push(crate::operation_node::TableConstraintNode::Check {
+            name: Some(name.into()),
+            expr: expr.to_operation_node(),
+        });
+        self
+    }
+
+    /// Adds a table-level FOREIGN KEY constraint with closure builder for cascading actions.
+    // @spec REQ-DDL-003
+    pub fn add_foreign_key_constraint<F>(
+        mut self,
+        name: impl Into<CompactString>,
+        columns: impl IntoIterator<Item = impl Into<CompactString>>,
+        target_table: impl Into<CompactString>,
+        target_columns: impl IntoIterator<Item = impl Into<CompactString>>,
+        builder: F,
+    ) -> Self
+    where
+        F: FnOnce(crate::schema::constraint_builder::ForeignKeyConstraintBuilder) -> crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
+    {
+        let fk_builder = crate::schema::constraint_builder::ForeignKeyConstraintBuilder::new(
+            Some(name.into()),
+            columns,
+            target_table,
+            target_columns,
+        );
+        let built = builder(fk_builder).build();
+        self.node.constraints.push(built);
+        self
+    }
+
     /// Attaches an executor to this builder.
     pub fn with_executor(mut self, executor: Arc<dyn QueryExecutor>) -> Self {
         self.executor = Some(executor);
@@ -136,5 +202,32 @@ mod tests {
             "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" serial PRIMARY KEY, \"email\" varchar(255) NOT NULL UNIQUE, \"role\" varchar(50) DEFAULT ?, \"org_id\" int8 REFERENCES \"organizations\" (\"id\") ON DELETE CASCADE ON UPDATE RESTRICT)"
         );
         assert_eq!(query.parameters, vec![crate::operation_node::Value::from("user")]);
+    }
+
+    #[test]
+    fn test_table_constraints() {
+        use crate::raw_builder::sql;
+
+        let compiler = DefaultQueryCompiler::new();
+
+        let query = create_table("order_items")
+            .add_column("order_id", "int8", |c| c.not_null())
+            .add_column("item_id", "int8", |c| c.not_null())
+            .add_column("quantity", "int4", |c| c.not_null())
+            .add_primary_key_constraint("pk_order_items", ["order_id", "item_id"])
+            .add_foreign_key_constraint(
+                "fk_order_items_order",
+                ["order_id"],
+                "orders",
+                ["id"],
+                |fk| fk.on_delete(OnModifyForeignAction::Cascade),
+            )
+            .add_check_constraint("chk_qty_positive", sql("quantity > 0"))
+            .compile(&compiler);
+
+        assert_eq!(
+            query.sql,
+            "CREATE TABLE \"order_items\" (\"order_id\" int8 NOT NULL, \"item_id\" int8 NOT NULL, \"quantity\" int4 NOT NULL, CONSTRAINT \"pk_order_items\" PRIMARY KEY (\"order_id\", \"item_id\"), CONSTRAINT \"fk_order_items_order\" FOREIGN KEY (\"order_id\") REFERENCES \"orders\" (\"id\") ON DELETE CASCADE, CONSTRAINT \"chk_qty_positive\" CHECK (quantity > 0))"
+        );
     }
 }
