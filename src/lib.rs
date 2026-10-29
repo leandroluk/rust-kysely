@@ -31,6 +31,10 @@ pub use dialect::postgres::{
 pub use dialect::sqlite::{
     SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler,
 };
+#[cfg(feature = "mysql")]
+pub use dialect::mysql::{
+    MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler, MYSQL_MIGRATION_LOCK_NAME,
+};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use introspection::{

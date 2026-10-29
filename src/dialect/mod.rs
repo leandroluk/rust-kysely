@@ -73,3 +73,9 @@ pub mod sqlite;
 
 #[cfg(feature = "sqlite")]
 pub use sqlite::{SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler};
+
+#[cfg(feature = "mysql")]
+pub mod mysql;
+
+#[cfg(feature = "mysql")]
+pub use mysql::{MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler};

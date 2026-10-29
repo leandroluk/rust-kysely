@@ -34,6 +34,7 @@ pub enum IdentifierQuote {
 pub struct DefaultQueryCompiler {
     parameter_style: ParameterStyle,
     identifier_quote: IdentifierQuote,
+    pub(crate) mysql_upsert: bool,
 }
 
 impl Default for DefaultQueryCompiler {
@@ -41,6 +42,7 @@ impl Default for DefaultQueryCompiler {
         Self {
             parameter_style: ParameterStyle::QuestionMark,
             identifier_quote: IdentifierQuote::DoubleQuote,
+            mysql_upsert: false,
         }
     }
 }
@@ -56,7 +58,14 @@ impl DefaultQueryCompiler {
         Self {
             parameter_style,
             identifier_quote,
+            mysql_upsert: false,
         }
+    }
+
+    /// Configures the compiler to use MySQL `ON DUPLICATE KEY UPDATE` syntax for upserts.
+    pub fn with_mysql_upsert(mut self) -> Self {
+        self.mysql_upsert = true;
+        self
     }
 
     /// Compiles an AST node into a `CompiledQuery`.
@@ -651,6 +660,19 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
     }
 
     fn visit_on_conflict(&mut self, node: &OnConflictNode) {
+        if self.compiler.mysql_upsert {
+            if let Some(ref updates) = node.updates {
+                self.append(" ON DUPLICATE KEY UPDATE ");
+                for (i, u) in updates.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.visit_node(u);
+                }
+            }
+            return;
+        }
+
         self.append(" ON CONFLICT");
         if let Some(ref cols) = node.columns {
             self.append(" (");
