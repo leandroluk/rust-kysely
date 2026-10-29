@@ -1,11 +1,13 @@
 //! Expression subsystem and traits for type-safe query construction.
 
+pub mod expression_builder;
 pub mod wrapper;
 
 use std::sync::Arc;
 use compact_str::CompactString;
 
 use crate::operation_node::{AliasNode, IdentifierNode, OperationNode};
+pub use expression_builder::{parse_column_reference, ExpressionBuilder};
 pub use wrapper::ExpressionWrapper;
 
 /// Core trait representing any SQL expression producing values of type `T`.

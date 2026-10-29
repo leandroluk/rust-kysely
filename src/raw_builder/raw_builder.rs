@@ -53,7 +53,7 @@ impl<T> RawBuilder<T> {
     }
 
     /// Appends an AST expression as an interpolated node parameter.
-    pub fn append_expr(mut self, expr: impl Expression) -> Self {
+    pub fn append_expr<U>(mut self, expr: impl Expression<U>) -> Self {
         self.parameters.push(expr.to_operation_node());
         self.sql_fragments.push(CompactString::new(""));
         self

@@ -37,8 +37,8 @@ pub fn lit(val: impl IntoValue) -> ExpressionWrapper<()> {
 
 /// Joins a sequence of expressions using the specified separator.
 // @spec REQ-EXPR-005
-pub fn join(
-    items: impl IntoIterator<Item = impl Expression>,
+pub fn join<U>(
+    items: impl IntoIterator<Item = impl Expression<U>>,
     separator: impl Into<CompactString>,
 ) -> RawBuilder<()> {
     let sep = separator.into();

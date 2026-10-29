@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 2 (Expressions, ExpressionBuilder & Raw SQL) — Em Execução
 - **Active Feature**: [02-expressions-raw-sql](../features/02-expressions-raw-sql/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-EXPR-004
+- **Active Task**: TASK-EXPR-005
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 implementada integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 2 (`TASK-EXPR-001` a `TASK-EXPR-007`).
-- 18 testes de integração e unitários passando em 0.00s.
+- 20 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~253MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-EXPR-004 complete. Gate: 20/20 pass. [REQ-EXPR-006] [REQ-EXPR-007]
 - 2026-10-29 TASK-EXPR-003 complete. Gate: 18/18 pass. [REQ-EXPR-003] [REQ-EXPR-004] [REQ-EXPR-005]
 - 2026-10-29 TASK-EXPR-002 complete. Gate: 17/17 pass. [REQ-EXPR-002]
 - 2026-10-29 TASK-EXPR-001 complete. Gate: 16/16 pass. [REQ-EXPR-001] [REQ-EXPR-002]
@@ -38,7 +39,7 @@
 - [x] TASK-EXPR-001: Implement Expression trait, ExpressionWrapper, FunctionNode and IntoValue — Execute phase
 - [x] TASK-EXPR-002: Implement sql fluent builder (RawBuilder) — Execute phase
 - [x] TASK-EXPR-003: Implement sql helper functions (raw, id, table, lit, join) — Execute phase
-- [ ] TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons — Execute phase
+- [x] TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons — Execute phase
 - [ ] TASK-EXPR-005: Implement eb.between and eb.exists — Execute phase
 - [ ] TASK-EXPR-006: Implement FunctionModule (eb.fn / db.fn) — Execute phase
 - [ ] TASK-EXPR-007: Integration tests for expressions and raw SQL — Execute phase

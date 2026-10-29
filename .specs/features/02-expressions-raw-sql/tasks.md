@@ -27,7 +27,7 @@
 - **Done when**: Helpers produce the correct AST nodes and compile accurately through `PostgresQueryCompiler`.
 - **Gate**: `cargo test test_sql_helpers`
 
-### TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons
+### TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons [x]
 - **REQ**: REQ-EXPR-006, REQ-EXPR-007
 - **Symbols**: `ExpressionBuilder`, `eb.or`, `eb.and`, `eb.not`, `eb.cmp`, `eb.cmp_ref`
 - **What**: Implement `ExpressionBuilder` struct providing boolean combinations and comparisons for column-to-value and column-to-column.
