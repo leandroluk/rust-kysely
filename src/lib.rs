@@ -9,6 +9,7 @@ pub mod driver;
 pub mod expression;
 pub mod introspection;
 pub mod kysely;
+pub mod migration;
 pub mod operation_node;
 pub mod parser;
 pub mod query_builder;
@@ -31,6 +32,10 @@ pub use introspection::{
     ColumnMetadata, DatabaseIntrospector, DatabaseMetadata, TableMetadata,
 };
 pub use kysely::Kysely;
+pub use migration::{
+    Migration, MigrationInfo, MigrationProvider, MigrationResult, MigrationStatus,
+    SimpleMigrationProvider, SqlMigration,
+};
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
 pub use query_builder::{

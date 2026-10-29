@@ -129,6 +129,11 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Returns the underlying query executor for this transaction.
+    pub fn executor(&self) -> Arc<dyn QueryExecutor> {
+        Arc::clone(&self.executor) as Arc<dyn QueryExecutor>
+    }
+
     /// Returns the schema module for executing DDL operations inside this transaction.
     // @spec REQ-DDL-001
     pub fn schema(&self) -> SchemaModule {
