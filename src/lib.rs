@@ -42,7 +42,7 @@ pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
 pub use plugin::{
     to_camel_case, to_snake_case, CamelCaseOptions, CamelCasePlugin, DeduplicateJoinsPlugin,
-    KyselyPlugin,
+    KyselyPlugin, WithSchemaPlugin,
 };
 pub use query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,

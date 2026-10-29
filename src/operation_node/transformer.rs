@@ -683,12 +683,25 @@ pub trait OperationNodeTransformer {
         node: &SelectQueryNode,
         orig: &Arc<OperationNode>,
     ) -> Arc<OperationNode> {
-        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
-        let mut changed = match (&node.from, &new_from) {
+        let mut changed = false;
+
+        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.with, &new_with) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
             _ => true,
-        };
+        } {
+            changed = true;
+        }
+
+        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        if match (&node.from, &new_from) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
 
         let new_selections: SmallVec<[Arc<OperationNode>; 4]> = node
             .selections
@@ -696,6 +709,18 @@ pub trait OperationNodeTransformer {
             .map(|s| {
                 let transformed = self.transform_node(Arc::clone(s));
                 if !Arc::ptr_eq(s, &transformed) {
+                    changed = true;
+                }
+                transformed
+            })
+            .collect();
+
+        let new_joins: SmallVec<[Arc<OperationNode>; 2]> = node
+            .joins
+            .iter()
+            .map(|j| {
+                let transformed = self.transform_node(Arc::clone(j));
+                if !Arc::ptr_eq(j, &transformed) {
                     changed = true;
                 }
                 transformed
@@ -718,11 +743,11 @@ pub trait OperationNodeTransformer {
             Arc::clone(orig)
         } else {
             Arc::new(OperationNode::SelectQuery(SelectQueryNode {
-                with: node.with.clone(),
+                with: new_with,
                 selections: new_selections,
                 distinct_on: node.distinct_on.clone(),
                 from: new_from,
-                joins: node.joins.clone(),
+                joins: new_joins,
                 where_clause: new_where,
                 group_by: node.group_by.clone(),
                 having: node.having.clone(),
@@ -737,28 +762,184 @@ pub trait OperationNodeTransformer {
     /// Transforms an InsertQueryNode.
     fn transform_insert_query(
         &mut self,
-        _node: &InsertQueryNode,
+        node: &InsertQueryNode,
         orig: &Arc<OperationNode>,
     ) -> Arc<OperationNode> {
-        Arc::clone(orig)
+        let mut changed = false;
+
+        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.with, &new_with) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_into = node.into.as_ref().map(|i| self.transform_node(Arc::clone(i)));
+        if match (&node.into, &new_into) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_values = node.values.as_ref().map(|v| self.transform_node(Arc::clone(v)));
+        if match (&node.values, &new_values) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_on_conflict = node.on_conflict.as_ref().map(|o| self.transform_node(Arc::clone(o)));
+        if match (&node.on_conflict, &new_on_conflict) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        if !changed {
+            Arc::clone(orig)
+        } else {
+            Arc::new(OperationNode::InsertQuery(InsertQueryNode {
+                with: new_with,
+                into: new_into,
+                columns: node.columns.clone(),
+                values: new_values,
+                on_conflict: new_on_conflict,
+                returning: node.returning.clone(),
+            }))
+        }
     }
 
     /// Transforms an UpdateQueryNode.
     fn transform_update_query(
         &mut self,
-        _node: &UpdateQueryNode,
+        node: &UpdateQueryNode,
         orig: &Arc<OperationNode>,
     ) -> Arc<OperationNode> {
-        Arc::clone(orig)
+        let mut changed = false;
+
+        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.with, &new_with) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_table = node.table.as_ref().map(|t| self.transform_node(Arc::clone(t)));
+        if match (&node.table, &new_table) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        if match (&node.from, &new_from) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_updates: SmallVec<[Arc<OperationNode>; 4]> = node
+            .updates
+            .iter()
+            .map(|u| {
+                let transformed = self.transform_node(Arc::clone(u));
+                if !Arc::ptr_eq(u, &transformed) {
+                    changed = true;
+                }
+                transformed
+            })
+            .collect();
+
+        let new_where = node
+            .where_clause
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.where_clause, &new_where) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        if !changed {
+            Arc::clone(orig)
+        } else {
+            Arc::new(OperationNode::UpdateQuery(UpdateQueryNode {
+                with: new_with,
+                table: new_table,
+                from: new_from,
+                joins: node.joins.clone(),
+                updates: new_updates,
+                where_clause: new_where,
+                returning: node.returning.clone(),
+            }))
+        }
     }
 
     /// Transforms a DeleteQueryNode.
     fn transform_delete_query(
         &mut self,
-        _node: &DeleteQueryNode,
+        node: &DeleteQueryNode,
         orig: &Arc<OperationNode>,
     ) -> Arc<OperationNode> {
-        Arc::clone(orig)
+        let mut changed = false;
+
+        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.with, &new_with) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        if match (&node.from, &new_from) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        let new_where = node
+            .where_clause
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
+        if match (&node.where_clause, &new_where) {
+            (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
+            (None, None) => false,
+            _ => true,
+        } {
+            changed = true;
+        }
+
+        if !changed {
+            Arc::clone(orig)
+        } else {
+            Arc::new(OperationNode::DeleteQuery(DeleteQueryNode {
+                with: new_with,
+                from: new_from,
+                joins: node.joins.clone(),
+                where_clause: new_where,
+                returning: node.returning.clone(),
+            }))
+        }
     }
 
     /// Transforms a ColumnUpdateNode.
