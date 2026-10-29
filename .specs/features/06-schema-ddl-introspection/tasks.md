@@ -27,7 +27,7 @@
 - **Done when**: Multi-column constraints compile cleanly into table-level SQL constraints.
 - **Gate**: `cargo test test_table_constraints`
 
-### TASK-DDL-004: Implement AlterTableBuilder and DropTableBuilder
+### TASK-DDL-004: Implement AlterTableBuilder and DropTableBuilder [x]
 - **REQ**: REQ-DDL-005, REQ-DDL-006
 - **Symbols**: `AlterTableBuilder`, `DropTableBuilder`, `.alter_table()`, `.drop_table()`, `.add_column()`, `.drop_column()`, `.alter_column()`, `.rename_column()`, `.if_exists()`, `.cascade()`
 - **What**: Implement fluent builders for altering tables (column addition/removal/modification/renaming, constraint addition/removal) and dropping tables.

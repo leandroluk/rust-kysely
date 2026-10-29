@@ -39,7 +39,10 @@ pub use query_executor::{
     Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
-pub use schema::{create_table, ColumnDefinitionBuilder, CreateTableBuilder};
+pub use schema::{
+    alter_table, create_table, drop_table, AlterTableBuilder, ColumnDefinitionBuilder,
+    CreateTableBuilder, DropTableBuilder, ForeignKeyConstraintBuilder,
+};
 pub use transaction::{IsolationLevel, Transaction, TransactionBuilder};
 pub use util::QueryId;
 
