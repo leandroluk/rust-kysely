@@ -12,7 +12,7 @@ categories = ["database", "asynchronous"]
 rust-version = "1.85"
 
 [features]
-default = ["std", "postgres", "json"]
+default = ["std", "postgres", "json", "sqlite", "mysql", "mssql", "pglite"]
 std = ["dep:tokio"]
 postgres = ["dep:tokio-postgres", "dep:tokio"]
 mysql = []

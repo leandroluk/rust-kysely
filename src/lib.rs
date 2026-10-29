@@ -27,6 +27,10 @@ pub use dialect::postgres::{
     PostgresAdapter, PostgresConnection, PostgresDialect, PostgresDriver, PostgresIntrospector,
     PostgresQueryCompiler, KYSELY_MIGRATION_LOCK_ID,
 };
+#[cfg(feature = "sqlite")]
+pub use dialect::sqlite::{
+    SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler,
+};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use introspection::{

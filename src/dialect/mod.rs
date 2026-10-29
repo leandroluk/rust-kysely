@@ -67,3 +67,9 @@ pub mod postgres;
 
 #[cfg(feature = "postgres")]
 pub use postgres::PostgresQueryCompiler;
+
+#[cfg(feature = "sqlite")]
+pub mod sqlite;
+
+#[cfg(feature = "sqlite")]
+pub use sqlite::{SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler};
