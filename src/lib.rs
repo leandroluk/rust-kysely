@@ -8,6 +8,7 @@ pub mod dialect;
 pub mod expression;
 pub mod operation_node;
 pub mod query_compiler;
+pub mod raw_builder;
 pub mod util;
 
 #[cfg(feature = "postgres")]
@@ -17,6 +18,7 @@ pub use operation_node::*;
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
+pub use raw_builder::{sql, RawBuilder};
 pub use util::QueryId;
 
 /// Library version

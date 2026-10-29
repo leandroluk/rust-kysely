@@ -9,7 +9,7 @@
 - **Done when**: `Expression` trait converts seamlessly to `Arc<OperationNode>` and `IntoValue` allows passing scalar primitives without `.into()`.
 - **Gate**: `cargo test test_expression_wrapper test_into_value`
 
-### TASK-EXPR-002: Implement sql fluent builder (RawBuilder)
+### TASK-EXPR-002: Implement sql fluent builder (RawBuilder) [x]
 - **REQ**: REQ-EXPR-002
 - **Symbols**: `RawBuilder`, `sql`
 - **What**: Implement `sql("...")` constructor and `RawBuilder` with `.bind(val)` and `.append(item)`.
