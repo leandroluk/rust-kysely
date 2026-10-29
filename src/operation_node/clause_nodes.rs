@@ -20,6 +20,8 @@ pub enum JoinType {
     LateralInner,
     /// LATERAL LEFT JOIN
     LateralLeft,
+    /// USING (e.g. in PostgreSQL DELETE USING)
+    Using,
 }
 
 impl JoinType {
@@ -32,6 +34,7 @@ impl JoinType {
             JoinType::Full => "FULL JOIN",
             JoinType::LateralInner => "INNER JOIN LATERAL",
             JoinType::LateralLeft => "LEFT JOIN LATERAL",
+            JoinType::Using => "USING",
         }
     }
 }

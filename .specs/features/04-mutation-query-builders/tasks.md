@@ -36,7 +36,7 @@
 - **Done when**: UPDATE query with SET, FROM, JOIN, and WHERE compiles accurately to SQL.
 - **Gate**: `cargo test test_update_query`
 
-### TASK-MUT-005: Implement DeleteQueryBuilder with using joins and filters
+### TASK-MUT-005: Implement DeleteQueryBuilder with using joins and filters [x]
 - **REQ**: REQ-MUT-009
 - **Symbols**: `DeleteQueryBuilder`, `delete_from`, `.using()`, `.where_()`
 - **What**: Implement `DeleteQueryBuilder` managing `DeleteQueryNode` with `using` joins and where filters.
