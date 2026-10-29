@@ -10,6 +10,12 @@ use crate::operation_node::{AliasNode, IdentifierNode, OperationNode};
 pub use expression_builder::{parse_column_reference, ExpressionBuilder};
 pub use wrapper::ExpressionWrapper;
 
+impl Expression<()> for crate::operation_node::SelectQueryNode {
+    fn to_operation_node(&self) -> Arc<OperationNode> {
+        Arc::new(OperationNode::SelectQuery(self.clone()))
+    }
+}
+
 /// Core trait representing any SQL expression producing values of type `T`.
 // @spec REQ-EXPR-001
 pub trait Expression<T = ()> {

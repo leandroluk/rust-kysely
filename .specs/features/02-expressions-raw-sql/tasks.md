@@ -36,7 +36,7 @@
 - **Done when**: `eb.or([eb.cmp("age", ">", 18), eb.cmp("name", "=", "Bob")])` produces parenthesized boolean AST.
 - **Gate**: `cargo test test_eb_boolean test_eb_cmp`
 
-### TASK-EXPR-005: Implement eb.between and eb.exists
+### TASK-EXPR-005: Implement eb.between and eb.exists [x]
 - **REQ**: REQ-EXPR-008, REQ-EXPR-009
 - **Symbols**: `eb.between`, `eb.between_symmetric`, `eb.exists`, `eb.not_exists`
 - **What**: Implement `BETWEEN`, `BETWEEN SYMMETRIC`, and subquery `EXISTS` / `NOT EXISTS` combinators on `ExpressionBuilder`.

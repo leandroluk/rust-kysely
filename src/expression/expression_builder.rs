@@ -109,6 +109,60 @@ impl ExpressionBuilder {
         let un = UnaryOperationNode::new("NOT", inner);
         ExpressionWrapper::new(Arc::new(OperationNode::Unary(un)))
     }
+
+    /// Constructs a `col BETWEEN min AND max` comparison.
+    // @spec REQ-EXPR-008
+    pub fn between(
+        &self,
+        column: impl Into<CompactString>,
+        min: impl IntoValue,
+        max: impl IntoValue,
+    ) -> ExpressionWrapper<bool> {
+        let col_node = parse_column_reference(column.into().as_str());
+        let min_node = Arc::new(OperationNode::Value(ValueNode::new(min.into_value())));
+        let max_node = Arc::new(OperationNode::Value(ValueNode::new(max.into_value())));
+
+        let and_node = Arc::new(OperationNode::And(AndNode::new(min_node, max_node)));
+        let bin = BinaryOperationNode::new(col_node, "BETWEEN", and_node);
+        ExpressionWrapper::new(Arc::new(OperationNode::Binary(bin)))
+    }
+
+    /// Constructs a `col BETWEEN SYMMETRIC min AND max` comparison.
+    // @spec REQ-EXPR-008
+    pub fn between_symmetric(
+        &self,
+        column: impl Into<CompactString>,
+        min: impl IntoValue,
+        max: impl IntoValue,
+    ) -> ExpressionWrapper<bool> {
+        let col_node = parse_column_reference(column.into().as_str());
+        let min_node = Arc::new(OperationNode::Value(ValueNode::new(min.into_value())));
+        let max_node = Arc::new(OperationNode::Value(ValueNode::new(max.into_value())));
+
+        let and_node = Arc::new(OperationNode::And(AndNode::new(min_node, max_node)));
+        let bin = BinaryOperationNode::new(col_node, "BETWEEN SYMMETRIC", and_node);
+        ExpressionWrapper::new(Arc::new(OperationNode::Binary(bin)))
+    }
+
+    /// Constructs an `EXISTS (subquery)` expression.
+    // @spec REQ-EXPR-009
+    pub fn exists<T>(&self, subquery: impl Expression<T>) -> ExpressionWrapper<bool> {
+        let inner = Arc::new(OperationNode::Parens(ParensNode::new(
+            subquery.to_operation_node(),
+        )));
+        let un = UnaryOperationNode::new("EXISTS", inner);
+        ExpressionWrapper::new(Arc::new(OperationNode::Unary(un)))
+    }
+
+    /// Constructs a `NOT EXISTS (subquery)` expression.
+    // @spec REQ-EXPR-009
+    pub fn not_exists<T>(&self, subquery: impl Expression<T>) -> ExpressionWrapper<bool> {
+        let inner = Arc::new(OperationNode::Parens(ParensNode::new(
+            subquery.to_operation_node(),
+        )));
+        let un = UnaryOperationNode::new("NOT EXISTS", inner);
+        ExpressionWrapper::new(Arc::new(OperationNode::Unary(un)))
+    }
 }
 
 /// Helper parsing strings like `"users.id"` into table-qualified `ReferenceNode`s, or bare `"id"` into `ColumnNode`s.
@@ -158,5 +212,43 @@ mod tests {
         let compiled_ref = compiler.compile(&cmp_ref.to_operation_node());
         assert_eq!(compiled_ref.sql, "\"u\".\"org_id\" = \"o\".\"id\"");
         assert!(compiled_ref.parameters.is_empty());
+    }
+
+    #[test]
+    fn test_eb_between() {
+        let eb = ExpressionBuilder::new();
+        let compiler = PostgresQueryCompiler::new();
+
+        let bet = eb.between("age", 18, 65);
+        let compiled = compiler.compile(&bet.to_operation_node());
+        assert_eq!(compiled.sql, "\"age\" BETWEEN $1 AND $2");
+        assert_eq!(compiled.parameters, vec![Value::I64(18), Value::I64(65)]);
+
+        let sym = eb.between_symmetric("score", 10, 20);
+        let compiled_sym = compiler.compile(&sym.to_operation_node());
+        assert_eq!(compiled_sym.sql, "\"score\" BETWEEN SYMMETRIC $1 AND $2");
+    }
+
+    #[test]
+    fn test_eb_exists() {
+        let eb = ExpressionBuilder::new();
+        let compiler = PostgresQueryCompiler::new();
+
+        let mut sub = SelectQueryNode::new();
+        sub.from = Some(Arc::new(OperationNode::Table(TableNode::new("orders"))));
+        sub.where_clause = Some(Arc::new(OperationNode::Where(WhereNode::new(Arc::new(
+            OperationNode::Binary(BinaryOperationNode::new(
+                Arc::new(OperationNode::Column(ColumnNode::new("user_id"))),
+                "=",
+                Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
+            )),
+        )))));
+
+        let exists_expr = eb.exists(sub);
+        let compiled = compiler.compile(&exists_expr.to_operation_node());
+        assert_eq!(
+            compiled.sql,
+            "EXISTS (SELECT * FROM \"orders\" WHERE \"user_id\" = \"u\".\"id\")"
+        );
     }
 }
