@@ -24,8 +24,8 @@ async-trait = "0.1"
 thiserror = "2.0"
 tokio = { version = "1.0", features = ["sync", "rt"], optional = true }
 tokio-postgres = { version = "0.7", optional = true }
-serde = { version = "1.0", optional = true }
-serde_json = { version = "1.0", optional = true }
+serde = { version = "1.0", default-features = false, optional = true }
+serde_json = { version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -35,3 +35,24 @@ serde_json = { version = "1.0" }
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+# Footprint control: strictly avoid multi-gigabyte target/ folders on Windows/MSVC
+[profile.dev]
+debug = 0
+strip = "debuginfo"
+incremental = false
+
+[profile.test]
+debug = 0
+strip = "debuginfo"
+incremental = false
+
+[profile.dev.package."*"]
+debug = 0
+opt-level = 0
+
+[profile.release]
+debug = 0
+strip = "debuginfo"
+lto = "thin"
+codegen-units = 1
