@@ -766,3 +766,197 @@ async fn test_integration_schema_ddl_full_lifecycle() {
     assert_eq!(history[7], "DROP TABLE IF EXISTS \"users\" CASCADE");
     assert_eq!(history[8], "DROP TYPE IF EXISTS \"user_role\" CASCADE");
 }
+
+#[tokio::test]
+async fn test_integration_migrator_full_lifecycle() {
+    use rust_kysely::dialect::CustomDialect;
+    use rust_kysely::driver::{DatabaseConnection, Driver, DriverError};
+    use rust_kysely::kysely::Kysely;
+    use rust_kysely::migration::{
+        FileMigrationProvider, Migrator, SimpleMigrationProvider, SqlMigration, NO_MIGRATIONS,
+    };
+    use rust_kysely::query_compiler::{CompiledQuery, DefaultQueryCompiler};
+    use rust_kysely::query_executor::{QueryResult, Row};
+    use rust_kysely::PostgresAdapter;
+    use std::sync::Mutex;
+
+    struct FullLifecycleConnection {
+        queries: Arc<Mutex<Vec<String>>>,
+        migrated: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait::async_trait]
+    impl DatabaseConnection for FullLifecycleConnection {
+        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+            self.queries.lock().unwrap().push(query.sql.clone());
+
+            if query.sql.contains("SELECT") && query.sql.contains("kysely_migration") {
+                let list = self.migrated.lock().unwrap().clone();
+                let rows: Vec<Row> = list
+                    .into_iter()
+                    .map(|name| {
+                        Row::new(
+                            ["name", "timestamp"],
+                            [
+                                Value::Text(name.into()),
+                                Value::Text("2026-10-29T12:00:00.000Z".into()),
+                            ],
+                        )
+                    })
+                    .collect();
+                return Ok(QueryResult::with_rows(rows));
+            }
+
+            if query.sql.contains("INSERT INTO") && query.sql.contains("kysely_migration") {
+                if let Some(Value::Text(ref s)) = query.parameters.first() {
+                    self.migrated.lock().unwrap().push(s.to_string());
+                }
+            }
+
+            if query.sql.contains("DELETE FROM") && query.sql.contains("kysely_migration") {
+                if let Some(Value::Text(ref s)) = query.parameters.first() {
+                    let mut list = self.migrated.lock().unwrap();
+                    if let Some(pos) = list.iter().position(|x| x == s.as_str()) {
+                        list.remove(pos);
+                    }
+                }
+            }
+
+            Ok(QueryResult::default())
+        }
+    }
+
+    struct FullLifecycleDriver {
+        queries: Arc<Mutex<Vec<String>>>,
+        migrated: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait::async_trait]
+    impl Driver for FullLifecycleDriver {
+        async fn acquire_connection(&self) -> Result<Box<dyn DatabaseConnection>, DriverError> {
+            Ok(Box::new(FullLifecycleConnection {
+                queries: Arc::clone(&self.queries),
+                migrated: Arc::clone(&self.migrated),
+            }))
+        }
+
+        async fn release_connection(&self, _conn: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+            Ok(())
+        }
+
+        async fn destroy(&self) -> Result<(), DriverError> {
+            Ok(())
+        }
+    }
+
+    let recorded = Arc::new(Mutex::new(Vec::new()));
+    let migrated = Arc::new(Mutex::new(Vec::new()));
+
+    let driver = Arc::new(FullLifecycleDriver {
+        queries: Arc::clone(&recorded),
+        migrated: Arc::clone(&migrated),
+    });
+    let compiler: Arc<dyn rust_kysely::query_compiler::QueryCompiler> = Arc::new(DefaultQueryCompiler::new());
+    let dialect = CustomDialect::new(driver, Arc::clone(&compiler)).with_adapter(Arc::new(PostgresAdapter));
+    let db = Kysely::new(dialect);
+
+    let provider = SimpleMigrationProvider::new()
+        .register(
+            "001_accounts",
+            SqlMigration::with_down(
+                "CREATE TABLE accounts (id serial PRIMARY KEY, balance numeric NOT NULL)",
+                "DROP TABLE accounts",
+            ),
+        )
+        .register(
+            "002_orders",
+            SqlMigration::with_down(
+                "CREATE TABLE orders (id serial PRIMARY KEY, account_id int4 REFERENCES accounts(id))",
+                "DROP TABLE orders",
+            ),
+        )
+        .register(
+            "003_indices",
+            SqlMigration::with_down(
+                "CREATE INDEX idx_orders_account ON orders(account_id)",
+                "DROP INDEX idx_orders_account",
+            ),
+        );
+
+    let migrator = Migrator::new(db, provider);
+
+    // 1. Initial pending
+    let list = migrator.get_migrations().await.unwrap();
+    assert_eq!(list.len(), 3);
+    assert!(list.iter().all(|m| m.executed_at.is_none()));
+
+    // 2. Migrate to latest
+    let res = migrator.migrate_to_latest().await.unwrap();
+    assert!(res.is_success());
+    assert_eq!(res.results.len(), 3);
+
+    // Verify PostgreSQL advisory lock was acquired and released
+    let q = recorded.lock().unwrap();
+    assert!(q.iter().any(|sql| sql.contains("pg_advisory_lock(3853314791062309107)")));
+    assert!(q.iter().any(|sql| sql.contains("pg_advisory_unlock(3853314791062309107)")));
+    drop(q);
+
+    // 3. Migrate down 1 step
+    let res_down = migrator.migrate_down().await.unwrap();
+    assert!(res_down.is_success());
+    assert_eq!(res_down.results.len(), 1);
+    assert_eq!(res_down.results[0].migration_name, "003_indices");
+    assert_eq!(res_down.results[0].direction, "Down");
+
+    // 4. Migrate to "001_accounts" (should rollback 002_orders)
+    let res_to_1 = migrator.migrate_to("001_accounts").await.unwrap();
+    assert!(res_to_1.is_success());
+    assert_eq!(res_to_1.results.len(), 1);
+    assert_eq!(res_to_1.results[0].migration_name, "002_orders");
+
+    // 5. Migrate to latest again (re-applies 002 and 003)
+    let res_reapply = migrator.migrate_to_latest().await.unwrap();
+    assert!(res_reapply.is_success());
+    assert_eq!(res_reapply.results.len(), 2);
+    assert_eq!(res_reapply.results[0].migration_name, "002_orders");
+    assert_eq!(res_reapply.results[1].migration_name, "003_indices");
+
+    // 6. Roll back all with NO_MIGRATIONS
+    let res_all_down = migrator.migrate_to(NO_MIGRATIONS).await.unwrap();
+    assert!(res_all_down.is_success());
+    assert_eq!(res_all_down.results.len(), 3);
+    assert_eq!(res_all_down.results[0].migration_name, "003_indices");
+    assert_eq!(res_all_down.results[1].migration_name, "002_orders");
+    assert_eq!(res_all_down.results[2].migration_name, "001_accounts");
+
+    // 7. Test FileMigrationProvider integration
+    let temp_dir = std::env::temp_dir().join(format!("integration_migrator_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&temp_dir);
+    std::fs::create_dir_all(&temp_dir).unwrap();
+
+    std::fs::write(
+        temp_dir.join("001_file.up.sql"),
+        "CREATE TABLE files (id serial PRIMARY KEY);",
+    )
+    .unwrap();
+    std::fs::write(
+        temp_dir.join("001_file.down.sql"),
+        "DROP TABLE files;",
+    )
+    .unwrap();
+
+    let file_provider = FileMigrationProvider::from_folder(&temp_dir);
+    let driver2 = Arc::new(FullLifecycleDriver {
+        queries: Arc::clone(&recorded),
+        migrated: Arc::new(Mutex::new(Vec::new())),
+    });
+    let db2 = Kysely::new(CustomDialect::new(driver2, compiler));
+    let file_migrator = Migrator::new(db2, file_provider);
+
+    let file_res = file_migrator.migrate_to_latest().await.unwrap();
+    assert!(file_res.is_success());
+    assert_eq!(file_res.results.len(), 1);
+    assert_eq!(file_res.results[0].migration_name, "001_file");
+
+    let _ = std::fs::remove_dir_all(&temp_dir);
+}
