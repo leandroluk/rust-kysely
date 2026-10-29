@@ -43,3 +43,21 @@ impl QueryResult {
         self.rows.is_empty()
     }
 }
+
+impl IntoIterator for QueryResult {
+    type Item = Row;
+    type IntoIter = std::vec::IntoIter<Row>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.rows.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a QueryResult {
+    type Item = &'a Row;
+    type IntoIter = std::slice::Iter<'a, Row>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.rows.iter()
+    }
+}

@@ -26,3 +26,9 @@ pub enum DriverError {
     #[error("Driver error: {0}")]
     Other(String),
 }
+
+impl From<crate::query_executor::ColumnError> for DriverError {
+    fn from(err: crate::query_executor::ColumnError) -> Self {
+        DriverError::ExecutionFailed(err.to_string())
+    }
+}

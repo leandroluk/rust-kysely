@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use compact_str::CompactString;
 
-use crate::dialect::Dialect;
+use crate::dialect::{DefaultAdapter, Dialect, DialectAdapter};
 use crate::driver::{Driver, DriverError};
 use crate::parser::IntoTableSource;
 use crate::query_builder::{
@@ -22,6 +22,7 @@ pub struct Kysely {
     driver: Arc<dyn Driver>,
     compiler: Arc<dyn QueryCompiler>,
     executor: Arc<dyn QueryExecutor>,
+    adapter: Arc<dyn DialectAdapter>,
 }
 
 impl Kysely {
@@ -29,6 +30,7 @@ impl Kysely {
     pub fn new<D: Dialect>(dialect: D) -> Self {
         let driver = dialect.create_driver();
         let compiler = dialect.create_query_compiler();
+        let adapter = dialect.create_adapter();
         let executor = Arc::new(DefaultQueryExecutor::new(
             Arc::clone(&driver),
             Arc::clone(&compiler),
@@ -37,6 +39,7 @@ impl Kysely {
             driver,
             compiler,
             executor,
+            adapter,
         }
     }
 
@@ -53,7 +56,19 @@ impl Kysely {
             driver,
             compiler,
             executor,
+            adapter: Arc::new(DefaultAdapter),
         }
+    }
+
+    /// Configures a custom dialect adapter for this `Kysely` client.
+    pub fn with_adapter(mut self, adapter: Arc<dyn DialectAdapter>) -> Self {
+        self.adapter = adapter;
+        self
+    }
+
+    /// Returns a reference to the dialect adapter.
+    pub fn adapter(&self) -> &Arc<dyn DialectAdapter> {
+        &self.adapter
     }
 
     /// Returns a reference to the active query executor.
