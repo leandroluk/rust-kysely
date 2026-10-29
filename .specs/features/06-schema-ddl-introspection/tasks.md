@@ -36,7 +36,7 @@
 - **Done when**: ALTER TABLE and DROP TABLE statements compile correctly with IF EXISTS and CASCADE options.
 - **Gate**: `cargo test test_alter_and_drop_table_builders`
 
-### TASK-DDL-005: Implement Index, View, and Custom Type DDL builders
+### TASK-DDL-005: Implement Index, View, and Custom Type DDL builders [x]
 - **REQ**: REQ-DDL-007, REQ-DDL-008, REQ-DDL-009
 - **Symbols**: `CreateIndexBuilder`, `DropIndexBuilder`, `CreateViewBuilder`, `DropViewBuilder`, `CreateTypeBuilder`, `DropTypeBuilder`
 - **What**: Implement builders for creating and dropping indexes (with unique, using method, partial where), views (with or replace, materialized), and PostgreSQL custom types (enums).

@@ -40,8 +40,10 @@ pub use query_executor::{
 };
 pub use raw_builder::{sql, RawBuilder};
 pub use schema::{
-    alter_table, create_table, drop_table, AlterTableBuilder, ColumnDefinitionBuilder,
-    CreateTableBuilder, DropTableBuilder, ForeignKeyConstraintBuilder,
+    alter_table, create_index, create_table, create_type, create_view, drop_index, drop_table,
+    drop_type, drop_view, AlterTableBuilder, ColumnDefinitionBuilder, CreateIndexBuilder,
+    CreateTableBuilder, CreateTypeBuilder, CreateViewBuilder, DropIndexBuilder, DropTableBuilder,
+    DropTypeBuilder, DropViewBuilder, ForeignKeyConstraintBuilder,
 };
 pub use transaction::{IsolationLevel, Transaction, TransactionBuilder};
 pub use util::QueryId;
