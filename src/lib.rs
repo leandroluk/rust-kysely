@@ -33,8 +33,8 @@ pub use introspection::{
 };
 pub use kysely::Kysely;
 pub use migration::{
-    Migration, MigrationInfo, MigrationProvider, MigrationResult, MigrationStatus,
-    SimpleMigrationProvider, SqlMigration,
+    FileMigrationProvider, Migration, MigrationInfo, MigrationProvider, MigrationResult,
+    MigrationStatus, SimpleMigrationProvider, SqlMigration,
 };
 pub use operation_node::*;
 pub use parser::{IntoSelectionItem, IntoSelections, IntoTableSource};
