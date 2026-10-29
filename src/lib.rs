@@ -7,6 +7,7 @@
 pub mod dialect;
 pub mod expression;
 pub mod operation_node;
+pub mod parser;
 pub mod query_compiler;
 pub mod raw_builder;
 pub mod util;
@@ -15,6 +16,7 @@ pub mod util;
 pub use dialect::PostgresQueryCompiler;
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use operation_node::*;
+pub use parser::{IntoSelectionItem, IntoSelections};
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };

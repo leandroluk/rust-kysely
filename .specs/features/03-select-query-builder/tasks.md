@@ -1,6 +1,6 @@
 # Tasks: 03 — Select Query Builder, Joins, Projections & Set Operations
 
-### TASK-SEL-001: Implement IntoSelections trait and tuple projections
+### TASK-SEL-001: Implement IntoSelections trait and tuple projections [x]
 - **REQ**: REQ-SEL-005, REQ-SEL-006
 - **Symbols**: `IntoSelections`, `IntoSelectionItem`
 - **What**: Implement `IntoSelections` supporting single items, string arrays, heterogeneous tuples up to 12 items, and closure callbacks (`|eb| (...)`).
