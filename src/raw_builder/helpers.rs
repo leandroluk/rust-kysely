@@ -1,7 +1,7 @@
 //! Helper constructors for raw SQL interpolation: raw, id, table, lit, and join.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::{Expression, ExpressionWrapper};
 use crate::operation_node::{
@@ -18,7 +18,9 @@ pub fn raw(sql_str: impl Into<CompactString>) -> ExpressionWrapper<()> {
 /// Constructs a sanitized identifier node that will be quoted according to the dialect.
 // @spec REQ-EXPR-004
 pub fn id(name: impl Into<CompactString>) -> ExpressionWrapper<()> {
-    ExpressionWrapper::new(Arc::new(OperationNode::Identifier(IdentifierNode::new(name))))
+    ExpressionWrapper::new(Arc::new(OperationNode::Identifier(IdentifierNode::new(
+        name,
+    ))))
 }
 
 /// Constructs a table reference node.

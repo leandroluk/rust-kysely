@@ -1,9 +1,9 @@
 //! In-memory migration provider for unit testing and embedded applications.
 
-use std::collections::BTreeMap;
-use std::sync::Arc;
 use async_trait::async_trait;
 use compact_str::CompactString;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::migration::traits::{Migration, MigrationProvider};
@@ -24,7 +24,11 @@ impl SimpleMigrationProvider {
     }
 
     /// Builder method registering a migration by name.
-    pub fn register(mut self, name: impl Into<CompactString>, migration: impl Migration + 'static) -> Self {
+    pub fn register(
+        mut self,
+        name: impl Into<CompactString>,
+        migration: impl Migration + 'static,
+    ) -> Self {
         self.migrations.insert(name.into(), Arc::new(migration));
         self
     }
@@ -42,7 +46,9 @@ impl SimpleMigrationProvider {
 
 #[async_trait]
 impl MigrationProvider for SimpleMigrationProvider {
-    async fn get_migrations(&self) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
+    async fn get_migrations(
+        &self,
+    ) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
         Ok(self.migrations.clone())
     }
 }
@@ -50,13 +56,13 @@ impl MigrationProvider for SimpleMigrationProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver};
     use crate::kysely::Kysely;
     use crate::migration::traits::SqlMigration;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::QueryResult;
+    use std::sync::Mutex;
 
     struct DummyConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -64,7 +70,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for DummyConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -82,7 +91,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -122,16 +134,23 @@ mod tests {
 
         // Verify BTreeMap orders migrations lexicographically
         let names: Vec<CompactString> = migrations.keys().cloned().collect();
-        assert_eq!(names, vec![
-            CompactString::from("001_create_users"),
-            CompactString::from("002_add_index")
-        ]);
+        assert_eq!(
+            names,
+            vec![
+                CompactString::from("001_create_users"),
+                CompactString::from("002_add_index")
+            ]
+        );
 
         // Execute 001 up in a transaction
         db.transaction()
             .execute(|trx| async move {
                 migrations.get("001_create_users").unwrap().up(&trx).await?;
-                migrations.get("001_create_users").unwrap().down(&trx).await?;
+                migrations
+                    .get("001_create_users")
+                    .unwrap()
+                    .down(&trx)
+                    .await?;
                 Ok(())
             })
             .await
@@ -140,7 +159,10 @@ mod tests {
         let queries = recorded.lock().unwrap();
         assert_eq!(queries.len(), 4);
         assert_eq!(queries[0], "BEGIN");
-        assert_eq!(queries[1], "CREATE TABLE users (id SERIAL PRIMARY KEY, email TEXT NOT NULL)");
+        assert_eq!(
+            queries[1],
+            "CREATE TABLE users (id SERIAL PRIMARY KEY, email TEXT NOT NULL)"
+        );
         assert_eq!(queries[2], "DROP TABLE users");
         assert_eq!(queries[3], "COMMIT");
     }

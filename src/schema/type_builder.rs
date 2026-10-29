@@ -1,7 +1,7 @@
 //! Fluent builders for CREATE TYPE AS ENUM and DROP TYPE statements.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::operation_node::{CreateTypeNode, DropTypeNode, OperationNode};
@@ -179,8 +179,14 @@ mod tests {
         );
 
         // 2. DROP INDEX
-        let drop_idx_q = drop_index("users_age_idx").if_exists().cascade().compile(&compiler);
-        assert_eq!(drop_idx_q.sql, "DROP INDEX IF EXISTS \"users_age_idx\" CASCADE");
+        let drop_idx_q = drop_index("users_age_idx")
+            .if_exists()
+            .cascade()
+            .compile(&compiler);
+        assert_eq!(
+            drop_idx_q.sql,
+            "DROP INDEX IF EXISTS \"users_age_idx\" CASCADE"
+        );
 
         // 3. CREATE VIEW
         let select_q = select_from("users").select(["id", "name"]);
@@ -196,12 +202,23 @@ mod tests {
         );
 
         // 4. DROP VIEW
-        let drop_view_q = drop_view("active_users").materialized().if_exists().compile(&compiler);
-        assert_eq!(drop_view_q.sql, "DROP MATERIALIZED VIEW IF EXISTS \"active_users\"");
+        let drop_view_q = drop_view("active_users")
+            .materialized()
+            .if_exists()
+            .compile(&compiler);
+        assert_eq!(
+            drop_view_q.sql,
+            "DROP MATERIALIZED VIEW IF EXISTS \"active_users\""
+        );
 
         // 5. CREATE TYPE
-        let type_q = create_type("mood").as_enum(["happy", "neutral", "sad"]).compile(&compiler);
-        assert_eq!(type_q.sql, "CREATE TYPE \"mood\" AS ENUM ('happy', 'neutral', 'sad')");
+        let type_q = create_type("mood")
+            .as_enum(["happy", "neutral", "sad"])
+            .compile(&compiler);
+        assert_eq!(
+            type_q.sql,
+            "CREATE TYPE \"mood\" AS ENUM ('happy', 'neutral', 'sad')"
+        );
 
         // 6. DROP TYPE
         let drop_type_q = drop_type("mood").if_exists().cascade().compile(&compiler);

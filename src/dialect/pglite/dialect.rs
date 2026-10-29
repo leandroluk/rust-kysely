@@ -40,12 +40,12 @@ impl Dialect for PGliteDialect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::driver::{DatabaseConnection, DriverError};
     use crate::kysely::Kysely;
     use crate::query_compiler::CompiledQuery;
     use crate::query_executor::QueryResult;
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct MockPGliteConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -53,7 +53,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockPGliteConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -71,7 +74,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -97,16 +103,26 @@ mod tests {
             .execute()
             .await;
 
-        let recorded = queries.lock().unwrap();
-        assert_eq!(recorded.len(), 1);
-        let sql = &recorded[0];
-        assert_eq!(sql, "SELECT \"key\", \"val\" FROM \"settings\" WHERE \"key\" = $1");
+        {
+            let recorded = queries.lock().unwrap();
+            assert_eq!(recorded.len(), 1);
+            let sql = &recorded[0];
+            assert_eq!(
+                sql,
+                "SELECT \"key\", \"val\" FROM \"settings\" WHERE \"key\" = $1"
+            );
+        }
 
         // 2. Adapter: verify PostgreSQL advisory lock ID 3853314791062309107
-        drop(recorded);
         let adapter = db.adapter();
-        adapter.acquire_migration_lock(db.executor().as_ref()).await.unwrap();
-        adapter.release_migration_lock(db.executor().as_ref()).await.unwrap();
+        adapter
+            .acquire_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
+        adapter
+            .release_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
 
         let recorded = queries.lock().unwrap();
         assert_eq!(recorded.len(), 3);

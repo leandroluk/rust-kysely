@@ -1,7 +1,7 @@
 //! Fluent JoinBuilder context for constructing multi-condition JOIN clauses.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::{Expression, ExpressionBuilder};
 use crate::operation_node::*;

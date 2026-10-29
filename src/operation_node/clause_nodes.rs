@@ -1,7 +1,7 @@
 //! Clause AST nodes for FROM, JOIN, WHERE, GROUP BY, ORDER BY, LIMIT, OFFSET, and WITH.
 
-use std::sync::Arc;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::OperationNode;
 
@@ -300,10 +300,7 @@ pub struct WithNode {
 
 impl WithNode {
     /// Creates a new WITH node.
-    pub fn new(
-        recursive: bool,
-        expressions: impl IntoIterator<Item = Arc<OperationNode>>,
-    ) -> Self {
+    pub fn new(recursive: bool, expressions: impl IntoIterator<Item = Arc<OperationNode>>) -> Self {
         Self {
             recursive,
             expressions: expressions.into_iter().collect(),
@@ -355,7 +352,10 @@ pub struct SetOperationNode {
 impl SetOperationNode {
     /// Creates a new set operation node.
     pub fn new(operator: SetOperator, expression: Arc<OperationNode>) -> Self {
-        Self { operator, expression }
+        Self {
+            operator,
+            expression,
+        }
     }
 }
 

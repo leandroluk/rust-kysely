@@ -39,8 +39,6 @@ impl Dialect for MssqlDialect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::dialect::mssql::introspector::MssqlIntrospector;
     use crate::driver::{DatabaseConnection, DriverError};
     use crate::introspection::DatabaseIntrospector;
@@ -48,6 +46,8 @@ mod tests {
     use crate::operation_node::Value;
     use crate::query_compiler::CompiledQuery;
     use crate::query_executor::{QueryResult, Row};
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct MockMssqlConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -55,7 +55,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockMssqlConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             if query.sql.contains("INFORMATION_SCHEMA.TABLES") {
@@ -73,7 +76,13 @@ mod tests {
             if query.sql.contains("INFORMATION_SCHEMA.COLUMNS") {
                 let rows = vec![
                     Row::new(
-                        ["table_name", "column_name", "data_type", "is_nullable", "column_default"],
+                        [
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                        ],
                         [
                             Value::Text("customers".into()),
                             Value::Text("id".into()),
@@ -83,7 +92,13 @@ mod tests {
                         ],
                     ),
                     Row::new(
-                        ["table_name", "column_name", "data_type", "is_nullable", "column_default"],
+                        [
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                        ],
                         [
                             Value::Text("customers".into()),
                             Value::Text("company".into()),
@@ -112,7 +127,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -162,8 +180,14 @@ mod tests {
 
         // 3. Advisory lock test via sp_getapplock
         let adapter = MssqlAdapter;
-        adapter.acquire_migration_lock(db.executor().as_ref()).await.unwrap();
-        adapter.release_migration_lock(db.executor().as_ref()).await.unwrap();
+        adapter
+            .acquire_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
+        adapter
+            .release_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
 
         {
             let recorded = queries.lock().unwrap();

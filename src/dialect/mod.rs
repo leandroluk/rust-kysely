@@ -1,8 +1,8 @@
 //! SQL dialect-specific query compilers and driver adapters.
 
-use std::sync::Arc;
 use crate::driver::Driver;
 use crate::query_compiler::QueryCompiler;
+use std::sync::Arc;
 
 pub mod adapter;
 pub use adapter::{DefaultAdapter, DialectAdapter};

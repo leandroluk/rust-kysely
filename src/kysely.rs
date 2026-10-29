@@ -1,7 +1,7 @@
 //! Main Kysely database client and builder orchestration facade.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::dialect::{DefaultAdapter, Dialect, DialectAdapter};
 use crate::driver::{Driver, DriverError};
@@ -175,12 +175,12 @@ impl Kysely {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver};
     use crate::operation_node::Value;
     use crate::query_compiler::DefaultQueryCompiler;
     use crate::query_executor::Row;
+    use async_trait::async_trait;
 
     struct MockConnection {
         rows: Vec<Row>,
@@ -188,7 +188,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockConnection {
-        async fn execute_query(&mut self, _query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            _query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             Ok(QueryResult::with_rows(self.rows.clone()))
         }
     }
@@ -205,7 +208,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -219,7 +225,11 @@ mod tests {
         let rows = vec![
             Row::new(
                 vec!["id", "name", "active"],
-                vec![Value::I64(1), Value::Text("Alice".into()), Value::Bool(true)],
+                vec![
+                    Value::I64(1),
+                    Value::Text("Alice".into()),
+                    Value::Bool(true),
+                ],
             ),
             Row::new(
                 vec!["id", "name", "active"],
@@ -233,7 +243,12 @@ mod tests {
         let db = Kysely::new(dialect);
 
         // 1. SELECT execution
-        let res = db.select_from("users").select(["id", "name"]).execute().await.unwrap();
+        let res = db
+            .select_from("users")
+            .select(["id", "name"])
+            .execute()
+            .await
+            .unwrap();
         assert_eq!(res.len(), 2);
 
         // 2. SELECT execute_take_first

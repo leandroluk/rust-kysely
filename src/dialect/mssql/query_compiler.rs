@@ -16,10 +16,7 @@ impl MssqlQueryCompiler {
     /// Creates a new `MssqlQueryCompiler`.
     pub fn new() -> Self {
         Self {
-            inner: DefaultQueryCompiler::with_styles(
-                ParameterStyle::AtP,
-                IdentifierQuote::Bracket,
-            ),
+            inner: DefaultQueryCompiler::with_styles(ParameterStyle::AtP, IdentifierQuote::Bracket),
         }
     }
 }

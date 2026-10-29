@@ -1,9 +1,9 @@
 //! Fluent RawBuilder implementation for constructing parameterized SQL without macros.
 
-use std::marker::PhantomData;
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 use crate::expression::Expression;
 use crate::operation_node::{IntoValue, OperationNode, RawNode, ValueNode};
@@ -95,10 +95,7 @@ mod tests {
         let compiler = DefaultQueryCompiler::new();
         let query = compiler.compile(&node);
 
-        assert_eq!(
-            query.sql,
-            "SELECT * FROM users WHERE id = ? AND active = ?"
-        );
+        assert_eq!(query.sql, "SELECT * FROM users WHERE id = ? AND active = ?");
         assert_eq!(query.parameters, vec![Value::I64(42), Value::Bool(true)]);
     }
 }

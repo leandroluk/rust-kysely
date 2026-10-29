@@ -1,7 +1,7 @@
 //! Database introspection traits and structured metadata representations.
 
-use async_trait::async_trait;
 use crate::driver::DriverError;
+use async_trait::async_trait;
 
 /// Metadata for a single table column.
 // @spec REQ-DDL-010

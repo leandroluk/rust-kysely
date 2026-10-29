@@ -39,8 +39,6 @@ impl Dialect for MysqlDialect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::dialect::mysql::introspector::MysqlIntrospector;
     use crate::driver::{DatabaseConnection, DriverError};
     use crate::introspection::DatabaseIntrospector;
@@ -48,6 +46,8 @@ mod tests {
     use crate::operation_node::Value;
     use crate::query_compiler::CompiledQuery;
     use crate::query_executor::{QueryResult, Row};
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct MockMysqlConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -55,7 +55,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockMysqlConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             if query.sql.contains("information_schema.tables") {
@@ -73,7 +76,14 @@ mod tests {
             if query.sql.contains("information_schema.columns") {
                 let rows = vec![
                     Row::new(
-                        ["table_name", "column_name", "data_type", "is_nullable", "column_default", "extra"],
+                        [
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                            "extra",
+                        ],
                         [
                             Value::Text("users".into()),
                             Value::Text("id".into()),
@@ -84,7 +94,14 @@ mod tests {
                         ],
                     ),
                     Row::new(
-                        ["table_name", "column_name", "data_type", "is_nullable", "column_default", "extra"],
+                        [
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                            "extra",
+                        ],
                         [
                             Value::Text("users".into()),
                             Value::Text("email".into()),
@@ -114,7 +131,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -150,8 +170,14 @@ mod tests {
         // 2. INSERT ON DUPLICATE KEY UPDATE
         let _ = db
             .insert_into("users")
-            .values([("id", Value::I64(1)), ("email", Value::Text("alice@mysql.com".into()))])
-            .on_conflict(|b| b.column("id").do_update_set(|u| u.set("email", "updated@mysql.com")))
+            .values([
+                ("id", Value::I64(1)),
+                ("email", Value::Text("alice@mysql.com".into())),
+            ])
+            .on_conflict(|b| {
+                b.column("id")
+                    .do_update_set(|u| u.set("email", "updated@mysql.com"))
+            })
             .execute()
             .await;
 
@@ -159,8 +185,14 @@ mod tests {
             let recorded = queries.lock().unwrap();
             assert_eq!(recorded.len(), 2);
             let sql = &recorded[1];
-            assert!(sql.contains("INSERT INTO `users`"), "Must have backtick table: {sql}");
-            assert!(sql.contains("ON DUPLICATE KEY UPDATE `email` = ?"), "Must have MySQL upsert: {sql}");
+            assert!(
+                sql.contains("INSERT INTO `users`"),
+                "Must have backtick table: {sql}"
+            );
+            assert!(
+                sql.contains("ON DUPLICATE KEY UPDATE `email` = ?"),
+                "Must have MySQL upsert: {sql}"
+            );
         }
 
         // 3. Introspection via MysqlIntrospector
@@ -178,8 +210,14 @@ mod tests {
 
         // 4. Advisory lock test
         let adapter = MysqlAdapter;
-        adapter.acquire_migration_lock(db.executor().as_ref()).await.unwrap();
-        adapter.release_migration_lock(db.executor().as_ref()).await.unwrap();
+        adapter
+            .acquire_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
+        adapter
+            .release_migration_lock(db.executor().as_ref())
+            .await
+            .unwrap();
 
         {
             let recorded = queries.lock().unwrap();

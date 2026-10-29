@@ -1,7 +1,7 @@
 //! Fluent builders for CREATE INDEX and DROP INDEX statements.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::expression::Expression;

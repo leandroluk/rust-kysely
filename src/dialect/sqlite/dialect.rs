@@ -39,8 +39,6 @@ impl Dialect for SqliteDialect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::dialect::sqlite::introspector::SqliteIntrospector;
     use crate::driver::{DatabaseConnection, DriverError};
     use crate::introspection::DatabaseIntrospector;
@@ -48,6 +46,8 @@ mod tests {
     use crate::operation_node::Value;
     use crate::query_compiler::CompiledQuery;
     use crate::query_executor::{QueryResult, Row};
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct MockSqliteConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -55,7 +55,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockSqliteConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             if query.sql.contains("sqlite_master") {
@@ -110,7 +113,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -140,7 +146,10 @@ mod tests {
             let recorded = queries.lock().unwrap();
             assert_eq!(recorded.len(), 1);
             let sql = &recorded[0];
-            assert_eq!(sql, "SELECT \"id\", \"email\" FROM \"users\" WHERE \"email\" = ?");
+            assert_eq!(
+                sql,
+                "SELECT \"id\", \"email\" FROM \"users\" WHERE \"email\" = ?"
+            );
         }
 
         // 2. Introspection via SqliteIntrospector

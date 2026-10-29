@@ -1,15 +1,15 @@
 //! Fluent, immutable DeleteQueryBuilder implementation.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
+use crate::driver::DriverError;
 use crate::expression::{Expression, ExpressionBuilder};
 use crate::operation_node::{
     AndNode, ColumnNode, DeleteQueryNode, IntoValue, JoinNode, JoinType, OperationNode, OrNode,
     SelectionNode, WhereNode,
 };
-use crate::driver::DriverError;
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
@@ -80,7 +80,9 @@ impl DeleteQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node(&OperationNode::DeleteQuery((*self.node).clone())).await
+        executor
+            .execute_node(&OperationNode::DeleteQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, if any.
@@ -89,7 +91,9 @@ impl DeleteQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first(&OperationNode::DeleteQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first(&OperationNode::DeleteQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, or returns an error if empty.
@@ -98,26 +102,37 @@ impl DeleteQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first_or_throw(&OperationNode::DeleteQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first_or_throw(&OperationNode::DeleteQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and deserializes rows into a `Vec<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_into<T: serde::de::DeserializeOwned>(&self) -> Result<Vec<T>, DriverError> {
+    pub async fn execute_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Vec<T>, DriverError> {
         let res = self.execute().await?;
         res.rows
             .into_iter()
-            .map(|r| r.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string())))
+            .map(|r| {
+                r.into_record::<T>()
+                    .map_err(|e| DriverError::ExecutionFailed(e.to_string()))
+            })
             .collect()
     }
 
     /// Executes the query and deserializes the first row into `Option<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, DriverError> {
+    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first().await? {
-            let record = row.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let record = row
+                .into_record::<T>()
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(record))
         } else {
             Ok(None)
@@ -342,13 +357,7 @@ mod tests {
             q1.sql,
             "DELETE FROM \"users\" WHERE \"active\" = $1 AND \"age\" < $2"
         );
-        assert_eq!(
-            q1.parameters,
-            vec![
-                Value::from(false),
-                Value::from(18),
-            ]
-        );
+        assert_eq!(q1.parameters, vec![Value::from(false), Value::from(18),]);
 
         // 2. Delete with using and reference condition
         let q2 = delete_from("users as u")

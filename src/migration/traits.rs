@@ -1,9 +1,9 @@
 //! Migration traits and data structures.
 
-use std::collections::BTreeMap;
-use std::sync::Arc;
 use async_trait::async_trait;
 use compact_str::CompactString;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::query_compiler::CompiledQuery;
@@ -64,7 +64,9 @@ pub trait Migration: Send + Sync {
 #[async_trait]
 pub trait MigrationProvider: Send + Sync {
     /// Returns a map of migration name to `Arc<dyn Migration>`, sorted by migration name.
-    async fn get_migrations(&self) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError>;
+    async fn get_migrations(
+        &self,
+    ) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError>;
 }
 
 /// A migration executed from raw SQL string statements.

@@ -1,7 +1,7 @@
 //! Fluent builder for CREATE TABLE statements.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::operation_node::{CreateTableNode, OperationNode};
@@ -85,10 +85,12 @@ impl CreateTableBuilder {
         name: impl Into<CompactString>,
         columns: impl IntoIterator<Item = impl Into<CompactString>>,
     ) -> Self {
-        self.node.constraints.push(crate::operation_node::TableConstraintNode::PrimaryKey {
-            name: Some(name.into()),
-            columns: columns.into_iter().map(Into::into).collect(),
-        });
+        self.node
+            .constraints
+            .push(crate::operation_node::TableConstraintNode::PrimaryKey {
+                name: Some(name.into()),
+                columns: columns.into_iter().map(Into::into).collect(),
+            });
         self
     }
 
@@ -99,10 +101,12 @@ impl CreateTableBuilder {
         name: impl Into<CompactString>,
         columns: impl IntoIterator<Item = impl Into<CompactString>>,
     ) -> Self {
-        self.node.constraints.push(crate::operation_node::TableConstraintNode::Unique {
-            name: Some(name.into()),
-            columns: columns.into_iter().map(Into::into).collect(),
-        });
+        self.node
+            .constraints
+            .push(crate::operation_node::TableConstraintNode::Unique {
+                name: Some(name.into()),
+                columns: columns.into_iter().map(Into::into).collect(),
+            });
         self
     }
 
@@ -113,10 +117,12 @@ impl CreateTableBuilder {
         name: impl Into<CompactString>,
         expr: impl crate::expression::Expression,
     ) -> Self {
-        self.node.constraints.push(crate::operation_node::TableConstraintNode::Check {
-            name: Some(name.into()),
-            expr: expr.to_operation_node(),
-        });
+        self.node
+            .constraints
+            .push(crate::operation_node::TableConstraintNode::Check {
+                name: Some(name.into()),
+                expr: expr.to_operation_node(),
+            });
         self
     }
 
@@ -131,7 +137,9 @@ impl CreateTableBuilder {
         builder: F,
     ) -> Self
     where
-        F: FnOnce(crate::schema::constraint_builder::ForeignKeyConstraintBuilder) -> crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
+        F: FnOnce(
+            crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
+        ) -> crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
     {
         let fk_builder = crate::schema::constraint_builder::ForeignKeyConstraintBuilder::new(
             Some(name.into()),
@@ -201,7 +209,10 @@ mod tests {
             query.sql,
             "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" serial PRIMARY KEY, \"email\" varchar(255) NOT NULL UNIQUE, \"role\" varchar(50) DEFAULT ?, \"org_id\" int8 REFERENCES \"organizations\" (\"id\") ON DELETE CASCADE ON UPDATE RESTRICT)"
         );
-        assert_eq!(query.parameters, vec![crate::operation_node::Value::from("user")]);
+        assert_eq!(
+            query.parameters,
+            vec![crate::operation_node::Value::from("user")]
+        );
     }
 
     #[test]

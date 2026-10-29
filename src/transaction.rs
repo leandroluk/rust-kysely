@@ -1,7 +1,7 @@
 //! Atomic transaction management, isolation levels, and savepoints.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::{Driver, DriverError};
 use crate::parser::IntoTableSource;
@@ -125,7 +125,8 @@ impl TransactionBuilder {
                     Ok(val)
                 }
                 Err(err) => {
-                    let rollback_query = CompiledQuery::new("ROLLBACK", vec![], QueryId::generate());
+                    let rollback_query =
+                        CompiledQuery::new("ROLLBACK", vec![], QueryId::generate());
                     let _ = conn.execute_query(&rollback_query).await;
                     let _ = self.driver.release_connection(conn).await;
                     Err(err)
@@ -160,30 +161,38 @@ impl Transaction {
 
     /// Starts building a SELECT query with a FROM table source inside this transaction.
     pub fn select_from(&self, table: impl IntoTableSource) -> SelectQueryBuilder {
-        select_from(table).with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)
+        select_from(table).with_executor(
+            Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>
+        )
     }
 
     /// Starts building a SELECT query selecting all columns (`*`) inside this transaction.
     pub fn select_all_from(&self, table: impl Into<CompactString>) -> SelectQueryBuilder {
         let tbl = table.into();
-        select_from(tbl.as_str())
-            .select_all()
-            .with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)
+        select_from(tbl.as_str()).select_all().with_executor(
+            Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>
+        )
     }
 
     /// Starts building an INSERT statement inside this transaction.
     pub fn insert_into(&self, table: impl IntoTableSource) -> InsertQueryBuilder {
-        insert_into(table).with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)
+        insert_into(table).with_executor(
+            Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>
+        )
     }
 
     /// Starts building an UPDATE statement inside this transaction.
     pub fn update_table(&self, table: impl IntoTableSource) -> UpdateQueryBuilder {
-        update_table(table).with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)
+        update_table(table).with_executor(
+            Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>
+        )
     }
 
     /// Starts building a DELETE statement inside this transaction.
     pub fn delete_from(&self, table: impl IntoTableSource) -> DeleteQueryBuilder {
-        delete_from(table).with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)
+        delete_from(table).with_executor(
+            Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>
+        )
     }
 
     /// Executes an already compiled query directly inside this transaction.
@@ -220,7 +229,11 @@ impl Transaction {
 
     /// Executes a closure inside a named savepoint, releasing on `Ok` and rolling back on `Err`.
     // @spec REQ-EXEC-010
-    pub async fn savepoint_block<T, F, Fut>(&self, name: &str, callback: F) -> Result<T, DriverError>
+    pub async fn savepoint_block<T, F, Fut>(
+        &self,
+        name: &str,
+        callback: F,
+    ) -> Result<T, DriverError>
     where
         F: FnOnce(Transaction) -> Fut,
         Fut: std::future::Future<Output = Result<T, DriverError>>,
@@ -242,12 +255,12 @@ impl Transaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::DatabaseConnection;
     use crate::kysely::Kysely;
     use crate::query_compiler::DefaultQueryCompiler;
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct RecordingConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -255,7 +268,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for RecordingConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -273,7 +289,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -296,7 +315,10 @@ mod tests {
         let res = db
             .transaction()
             .execute(|trx| async move {
-                trx.delete_from("users").where_("id", "=", 1).execute().await?;
+                trx.delete_from("users")
+                    .where_("id", "=", 1)
+                    .execute()
+                    .await?;
                 Ok(42)
             })
             .await;
@@ -314,7 +336,10 @@ mod tests {
         let fail_res: Result<(), DriverError> = db
             .transaction()
             .execute(|trx| async move {
-                trx.insert_into("users").set("name", "Bob").execute().await?;
+                trx.insert_into("users")
+                    .set("name", "Bob")
+                    .execute()
+                    .await?;
                 Err(DriverError::ExecutionFailed("intentional failure".into()))
             })
             .await;
@@ -351,7 +376,8 @@ mod tests {
                 trx.release_savepoint("sp1").await?;
 
                 // Successful savepoint block
-                trx.savepoint_block("sp_block_ok", |_sub| async move { Ok(()) }).await?;
+                trx.savepoint_block("sp_block_ok", |_sub| async move { Ok(()) })
+                    .await?;
 
                 // Failed savepoint block
                 let _ = trx

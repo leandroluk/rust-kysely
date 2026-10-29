@@ -1,7 +1,7 @@
 //! ExpressionBuilder (`eb`) passed to closures for fluent boolean combinators and comparisons.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::function_module::FunctionModule;
 use crate::expression::{Expression, ExpressionWrapper};
@@ -69,7 +69,11 @@ impl ExpressionBuilder {
         operator: impl Into<CompactString>,
         right: impl Expression<T2>,
     ) -> ExpressionWrapper<bool> {
-        let bin = BinaryOperationNode::new(left.to_operation_node(), operator, right.to_operation_node());
+        let bin = BinaryOperationNode::new(
+            left.to_operation_node(),
+            operator,
+            right.to_operation_node(),
+        );
         ExpressionWrapper::new(Arc::new(OperationNode::Binary(bin)))
     }
 
@@ -82,12 +86,19 @@ impl ExpressionBuilder {
         let mut iter = expressions.into_iter();
         let first = match iter.next() {
             Some(e) => e.to_operation_node(),
-            None => return ExpressionWrapper::new(Arc::new(OperationNode::Value(ValueNode::new(false)))),
+            None => {
+                return ExpressionWrapper::new(Arc::new(OperationNode::Value(ValueNode::new(
+                    false,
+                ))))
+            }
         };
 
         let mut combined = first;
         for next in iter {
-            combined = Arc::new(OperationNode::Or(OrNode::new(combined, next.to_operation_node())));
+            combined = Arc::new(OperationNode::Or(OrNode::new(
+                combined,
+                next.to_operation_node(),
+            )));
         }
 
         ExpressionWrapper::new(Arc::new(OperationNode::Parens(ParensNode::new(combined))))
@@ -102,12 +113,17 @@ impl ExpressionBuilder {
         let mut iter = expressions.into_iter();
         let first = match iter.next() {
             Some(e) => e.to_operation_node(),
-            None => return ExpressionWrapper::new(Arc::new(OperationNode::Value(ValueNode::new(true)))),
+            None => {
+                return ExpressionWrapper::new(Arc::new(OperationNode::Value(ValueNode::new(true))))
+            }
         };
 
         let mut combined = first;
         for next in iter {
-            combined = Arc::new(OperationNode::And(AndNode::new(combined, next.to_operation_node())));
+            combined = Arc::new(OperationNode::And(AndNode::new(
+                combined,
+                next.to_operation_node(),
+            )));
         }
 
         ExpressionWrapper::new(Arc::new(OperationNode::Parens(ParensNode::new(combined))))
@@ -181,7 +197,9 @@ impl ExpressionBuilder {
 /// Helper parsing strings like `"users.id"` into table-qualified `ReferenceNode`s, or bare `"id"` into `ColumnNode`s.
 pub fn parse_column_reference(name: &str) -> Arc<OperationNode> {
     if let Some((table, col)) = name.split_once('.') {
-        Arc::new(OperationNode::Reference(ReferenceNode::with_table(table, col)))
+        Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+            table, col,
+        )))
     } else {
         Arc::new(OperationNode::Column(ColumnNode::new(name)))
     }
@@ -198,17 +216,14 @@ mod tests {
         let eb = ExpressionBuilder::new();
         let compiler = PostgresQueryCompiler::new();
 
-        let expr = eb.or([
-            eb.cmp("age", ">", 18),
-            eb.cmp("first_name", "=", "Bob"),
-        ]);
+        let expr = eb.or([eb.cmp("age", ">", 18), eb.cmp("first_name", "=", "Bob")]);
 
         let compiled = compiler.compile(&expr.to_operation_node());
+        assert_eq!(compiled.sql, "(\"age\" > $1 OR \"first_name\" = $2)");
         assert_eq!(
-            compiled.sql,
-            "(\"age\" > $1 OR \"first_name\" = $2)"
+            compiled.parameters,
+            vec![Value::I64(18), Value::from("Bob")]
         );
-        assert_eq!(compiled.parameters, vec![Value::I64(18), Value::from("Bob")]);
 
         let not_expr = eb.not(eb.cmp("active", "=", true));
         let compiled_not = compiler.compile(&not_expr.to_operation_node());
@@ -253,7 +268,9 @@ mod tests {
             OperationNode::Binary(BinaryOperationNode::new(
                 Arc::new(OperationNode::Column(ColumnNode::new("user_id"))),
                 "=",
-                Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
+                Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                    "u", "id",
+                ))),
             )),
         )))));
 

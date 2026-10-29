@@ -1,8 +1,8 @@
 //! Fluent OnConflictBuilder for constructing PostgreSQL upsert (ON CONFLICT) clauses.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::expression::{Expression, ExpressionBuilder};
 use crate::operation_node::{
@@ -83,11 +83,7 @@ impl OnConflictBuilder {
     }
 
     /// Sets a column update with an arbitrary expression (`col = expr`).
-    pub fn set_expr<T>(
-        mut self,
-        col: impl Into<CompactString>,
-        expr: impl Expression<T>,
-    ) -> Self {
+    pub fn set_expr<T>(mut self, col: impl Into<CompactString>, expr: impl Expression<T>) -> Self {
         self.do_nothing = false;
         let update_node = Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
             Arc::new(OperationNode::Column(ColumnNode::new(col))),

@@ -1,8 +1,8 @@
 //! AST operation nodes representing Data Definition Language (DDL) structures.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::OperationNode;
 
@@ -51,7 +51,10 @@ pub struct ReferencesNode {
 
 impl ReferencesNode {
     /// Creates a new `ReferencesNode`.
-    pub fn new(target_table: impl Into<CompactString>, target_column: impl Into<CompactString>) -> Self {
+    pub fn new(
+        target_table: impl Into<CompactString>,
+        target_column: impl Into<CompactString>,
+    ) -> Self {
         Self {
             target_table: target_table.into(),
             target_column: target_column.into(),

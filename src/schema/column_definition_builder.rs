@@ -1,11 +1,12 @@
 //! Fluent builder for column definitions in CREATE TABLE and ALTER TABLE.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::Expression;
 use crate::operation_node::{
-    ColumnDefinitionNode, IntoValue, OnModifyForeignAction, OperationNode, ReferencesNode, ValueNode,
+    ColumnDefinitionNode, IntoValue, OnModifyForeignAction, OperationNode, ReferencesNode,
+    ValueNode,
 };
 
 /// Fluent builder for a column definition.
@@ -47,7 +48,9 @@ impl ColumnDefinitionBuilder {
     /// Sets a literal default value for the column.
     // @spec REQ-DDL-002
     pub fn default_to(mut self, val: impl IntoValue) -> Self {
-        self.node.default_to = Some(Arc::new(OperationNode::Value(ValueNode::new(val.into_value()))));
+        self.node.default_to = Some(Arc::new(OperationNode::Value(ValueNode::new(
+            val.into_value(),
+        ))));
         self
     }
 

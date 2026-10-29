@@ -3,7 +3,7 @@ use rust_kysely::expression::Expression;
 use rust_kysely::operation_node::*;
 use rust_kysely::query_compiler::DefaultQueryCompiler;
 use rust_kysely::{
-    delete_from, insert_into, select_from, update_table, sql, ExpressionBuilder, OrderNulls,
+    delete_from, insert_into, select_from, sql, update_table, ExpressionBuilder, OrderNulls,
     VERSION,
 };
 use std::sync::Arc;
@@ -18,12 +18,16 @@ fn test_integration_postgres_select_complex() {
     let compiler = PostgresQueryCompiler::new();
 
     let mut cte_query = SelectQueryNode::new();
-    cte_query.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-        Arc::new(OperationNode::Column(ColumnNode::new("id"))),
-    ))));
-    cte_query.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-        Arc::new(OperationNode::Column(ColumnNode::new("org_id"))),
-    ))));
+    cte_query
+        .selections
+        .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("id"))),
+        ))));
+    cte_query
+        .selections
+        .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("org_id"))),
+        ))));
     cte_query.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
         OperationNode::Table(TableNode::new("users")),
     )))));
@@ -37,7 +41,9 @@ fn test_integration_postgres_select_complex() {
 
     let cte = Arc::new(OperationNode::CommonTableExpression(
         CommonTableExpressionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("active_users"))),
+            Arc::new(OperationNode::Identifier(IdentifierNode::new(
+                "active_users",
+            ))),
             Arc::new(OperationNode::SelectQuery(cte_query)),
         ),
     ));
@@ -45,48 +51,70 @@ fn test_integration_postgres_select_complex() {
     let mut select = SelectQueryNode::new();
     select.with = Some(Arc::new(OperationNode::With(WithNode::new(false, [cte]))));
 
-    select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-        Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
-    ))));
-    select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::with_alias(
-        Arc::new(OperationNode::Reference(ReferenceNode::with_table("o", "name"))),
-        Arc::new(OperationNode::Identifier(IdentifierNode::new("org_name"))),
-    ))));
+    select
+        .selections
+        .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                "u", "id",
+            ))),
+        ))));
+    select.selections.push(Arc::new(OperationNode::Selection(
+        SelectionNode::with_alias(
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                "o", "name",
+            ))),
+            Arc::new(OperationNode::Identifier(IdentifierNode::new("org_name"))),
+        ),
+    )));
 
     select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
         OperationNode::Alias(AliasNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("active_users"))),
+            Arc::new(OperationNode::Identifier(IdentifierNode::new(
+                "active_users",
+            ))),
             Arc::new(OperationNode::Identifier(IdentifierNode::new("u"))),
         )),
     )))));
 
-    select.joins.push(Arc::new(OperationNode::Join(JoinNode::with_on(
-        JoinType::Inner,
-        Arc::new(OperationNode::Alias(AliasNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("organizations"))),
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("o"))),
-        ))),
-        Arc::new(OperationNode::Binary(BinaryOperationNode::new(
-            Arc::new(OperationNode::Reference(ReferenceNode::with_table("o", "id"))),
-            "=",
-            Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "org_id"))),
-        ))),
-    ))));
+    select
+        .joins
+        .push(Arc::new(OperationNode::Join(JoinNode::with_on(
+            JoinType::Inner,
+            Arc::new(OperationNode::Alias(AliasNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new(
+                    "organizations",
+                ))),
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("o"))),
+            ))),
+            Arc::new(OperationNode::Binary(BinaryOperationNode::new(
+                Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                    "o", "id",
+                ))),
+                "=",
+                Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                    "u", "org_id",
+                ))),
+            ))),
+        ))));
 
     select.where_clause = Some(Arc::new(OperationNode::Where(WhereNode::new(Arc::new(
         OperationNode::Binary(BinaryOperationNode::new(
-            Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "org_id"))),
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                "u", "org_id",
+            ))),
             ">",
             Arc::new(OperationNode::Value(ValueNode::new(10))),
         )),
     )))));
 
-    select.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new([Arc::new(
-        OperationNode::OrderByItem(OrderByItemNode::new(
-            Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
+    select.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new([
+        Arc::new(OperationNode::OrderByItem(OrderByItemNode::new(
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                "u", "id",
+            ))),
             OrderDirection::Asc,
-        )),
-    )]))));
+        ))),
+    ]))));
 
     select.limit = Some(Arc::new(OperationNode::Limit(LimitNode::new(Arc::new(
         OperationNode::Value(ValueNode::new(25)),
@@ -103,7 +131,12 @@ fn test_integration_postgres_select_complex() {
     );
     assert_eq!(
         query.parameters,
-        vec![Value::Bool(true), Value::I64(10), Value::I64(25), Value::I64(50)]
+        vec![
+            Value::Bool(true),
+            Value::I64(10),
+            Value::I64(25),
+            Value::I64(50)
+        ]
     );
     assert!(query.query_id.raw() > 0);
 }
@@ -119,15 +152,13 @@ fn test_integration_postgres_insert_on_conflict_returning() {
         Arc::new(OperationNode::Column(ColumnNode::new("name"))),
     ]);
     insert.values = Some(Arc::new(OperationNode::Values(ValuesNode::new([
-        Arc::new(OperationNode::PrimitiveValueList(PrimitiveValueListNode::new([
-            Value::from("bob@example.com"),
-            Value::from("Bob"),
-        ]))),
+        Arc::new(OperationNode::PrimitiveValueList(
+            PrimitiveValueListNode::new([Value::from("bob@example.com"), Value::from("Bob")]),
+        )),
     ]))));
 
-    let conflict_cols = smallvec::smallvec![Arc::new(OperationNode::Column(ColumnNode::new(
-        "email"
-    )))];
+    let conflict_cols =
+        smallvec::smallvec![Arc::new(OperationNode::Column(ColumnNode::new("email")))];
     let conflict_updates = smallvec::smallvec![Arc::new(OperationNode::ColumnUpdate(
         ColumnUpdateNode::new(
             Arc::new(OperationNode::Column(ColumnNode::new("name"))),
@@ -135,16 +166,16 @@ fn test_integration_postgres_insert_on_conflict_returning() {
         )
     ))];
     let conflict_where = Some(Arc::new(OperationNode::Binary(BinaryOperationNode::new(
-        Arc::new(OperationNode::Reference(ReferenceNode::with_table("users", "archived"))),
+        Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+            "users", "archived",
+        ))),
         "=",
         Arc::new(OperationNode::Value(ValueNode::new(false))),
     ))));
 
-    insert.on_conflict = Some(Arc::new(OperationNode::OnConflict(OnConflictNode::do_update(
-        Some(conflict_cols),
-        conflict_updates,
-        conflict_where,
-    ))));
+    insert.on_conflict = Some(Arc::new(OperationNode::OnConflict(
+        OnConflictNode::do_update(Some(conflict_cols), conflict_updates, conflict_where),
+    )));
 
     insert.returning = Some(smallvec::smallvec![
         Arc::new(OperationNode::Selection(SelectionNode::new(Arc::new(
@@ -177,14 +208,18 @@ fn test_integration_postgres_update_and_delete() {
 
     let mut update = UpdateQueryNode::new();
     update.table = Some(Arc::new(OperationNode::Table(TableNode::new("accounts"))));
-    update.updates.push(Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
-        Arc::new(OperationNode::Column(ColumnNode::new("balance"))),
-        Arc::new(OperationNode::Value(ValueNode::new(1500))),
-    ))));
-    update.updates.push(Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
-        Arc::new(OperationNode::Column(ColumnNode::new("updated_at"))),
-        Arc::new(OperationNode::Raw(RawNode::new("NOW()"))),
-    ))));
+    update.updates.push(Arc::new(OperationNode::ColumnUpdate(
+        ColumnUpdateNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("balance"))),
+            Arc::new(OperationNode::Value(ValueNode::new(1500))),
+        ),
+    )));
+    update.updates.push(Arc::new(OperationNode::ColumnUpdate(
+        ColumnUpdateNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("updated_at"))),
+            Arc::new(OperationNode::Raw(RawNode::new("NOW()"))),
+        ),
+    )));
     update.where_clause = Some(Arc::new(OperationNode::Where(WhereNode::new(Arc::new(
         OperationNode::Binary(BinaryOperationNode::new(
             Arc::new(OperationNode::Column(ColumnNode::new("id"))),
@@ -231,9 +266,11 @@ fn test_integration_default_ansi_compiler() {
     let compiler = DefaultQueryCompiler::new();
 
     let mut select = SelectQueryNode::new();
-    select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-        Arc::new(OperationNode::Column(ColumnNode::new("total"))),
-    ))));
+    select
+        .selections
+        .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Column(ColumnNode::new("total"))),
+        ))));
     select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
         OperationNode::Table(TableNode::new("orders")),
     )))));
@@ -241,10 +278,9 @@ fn test_integration_default_ansi_compiler() {
         OperationNode::Binary(BinaryOperationNode::new(
             Arc::new(OperationNode::Column(ColumnNode::new("status"))),
             "IN",
-            Arc::new(OperationNode::PrimitiveValueList(PrimitiveValueListNode::new([
-                Value::from("completed"),
-                Value::from("shipped"),
-            ]))),
+            Arc::new(OperationNode::PrimitiveValueList(
+                PrimitiveValueListNode::new([Value::from("completed"), Value::from("shipped")]),
+            )),
         )),
     )))));
 
@@ -275,11 +311,18 @@ fn test_integration_eb_and_raw_builder_combined() {
     ]);
 
     let mut select = SelectQueryNode::new();
-    select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-        Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
-    ))));
+    select
+        .selections
+        .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                "u", "id",
+            ))),
+        ))));
     select.selections.push(
-        eb.fn_().count("o.id").as_("order_count").to_operation_node(),
+        eb.fn_()
+            .count("o.id")
+            .as_("order_count")
+            .to_operation_node(),
     );
     select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
         OperationNode::Alias(AliasNode::new(
@@ -310,7 +353,11 @@ fn test_integration_eb_and_raw_builder_combined() {
     // 2. Raw SQL builder with sql::* helpers
     let raw_query = sql("SELECT ")
         .append_expr(sql::join(
-            [sql::id("first_name"), sql::id("last_name"), sql::id("email")],
+            [
+                sql::id("first_name"),
+                sql::id("last_name"),
+                sql::id("email"),
+            ],
             ", ",
         ))
         .append(" FROM ")
@@ -343,15 +390,11 @@ fn test_integration_select_builder_full_fluent_pipeline() {
 
     let query = select_from("active_users as u")
         .with("active_users", cte)
-        .select((
-            "u.id",
-            "u.name",
-            eb.fn_().count("u.id").as_("total_users"),
-        ))
+        .select(("u.id", "u.name", eb.fn_().count("u.id").as_("total_users")))
         .inner_join_ref("organizations as o", "o.id", "u.org_id")
         .left_join("orders as ord", |jb| {
             jb.on_ref("ord.user_id", "=", "u.id")
-              .on("ord.status", "=", "completed")
+                .on("ord.status", "=", "completed")
         })
         .where_("u.org_id", ">", 10)
         .where_expr(|eb| {
@@ -390,9 +433,15 @@ fn test_integration_select_builder_full_fluent_pipeline() {
 fn test_integration_select_builder_set_operations() {
     let compiler = PostgresQueryCompiler::new();
 
-    let q1 = select_from("users").select(["id", "email"]).where_("role", "=", "admin");
-    let q2 = select_from("users").select(["id", "email"]).where_("role", "=", "moderator");
-    let q3 = select_from("users").select(["id", "email"]).where_("active", "=", false);
+    let q1 = select_from("users")
+        .select(["id", "email"])
+        .where_("role", "=", "admin");
+    let q2 = select_from("users")
+        .select(["id", "email"])
+        .where_("role", "=", "moderator");
+    let q3 = select_from("users")
+        .select(["id", "email"])
+        .where_("active", "=", false);
 
     let query = q1.union_all(q2).except(q3).compile(&compiler);
     assert_eq!(
@@ -419,13 +468,12 @@ fn test_integration_insert_builder_with_upsert_and_returning() {
         .set("email", "alice@corp.com")
         .set("active", true)
         .on_conflict(|oc| {
-            oc.column("id")
-              .do_update_set(|ub| {
-                  ub.set_ref("name", "excluded.name")
+            oc.column("id").do_update_set(|ub| {
+                ub.set_ref("name", "excluded.name")
                     .set_ref("email", "excluded.email")
                     .set("updated_at", "NOW()")
                     .where_("users.active", "=", true)
-              })
+            })
         })
         .returning(["id", "name", "email"])
         .compile(&compiler);
@@ -467,10 +515,7 @@ fn test_integration_update_builder_with_from_joins_and_returning() {
     );
     assert_eq!(
         query.parameters,
-        vec![
-            Value::from(95000),
-            Value::from("Acme Corp"),
-        ]
+        vec![Value::from(95000), Value::from("Acme Corp"),]
     );
 }
 
@@ -514,7 +559,10 @@ async fn test_integration_kysely_query_execution_full_cycle() {
 
     #[async_trait]
     impl DatabaseConnection for MockConnection {
-        async fn execute_query(&mut self, query: &rust_kysely::CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &rust_kysely::CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.executed.lock().unwrap().push(query.sql.clone());
 
             let rows = vec![
@@ -553,7 +601,10 @@ async fn test_integration_kysely_query_execution_full_cycle() {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -628,7 +679,10 @@ async fn test_integration_kysely_query_execution_full_cycle() {
     assert_eq!(tx_res.unwrap(), "success");
 
     let history = executed.lock().unwrap().clone();
-    assert_eq!(history[0], "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    assert_eq!(
+        history[0],
+        "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ"
+    );
     assert!(history[1].starts_with("INSERT INTO"));
     assert_eq!(history[2], "SAVEPOINT \"sp1\"");
     assert!(history[3].starts_with("UPDATE"));
@@ -640,8 +694,8 @@ async fn test_integration_kysely_query_execution_full_cycle() {
 async fn test_integration_schema_ddl_full_lifecycle() {
     use async_trait::async_trait;
     use rust_kysely::{
-        CustomDialect, DatabaseConnection, DefaultQueryCompiler, Driver, DriverError,
-        Kysely, OnModifyForeignAction, QueryResult,
+        CustomDialect, DatabaseConnection, DefaultQueryCompiler, Driver, DriverError, Kysely,
+        OnModifyForeignAction, QueryResult,
     };
     use std::sync::Mutex;
 
@@ -651,7 +705,10 @@ async fn test_integration_schema_ddl_full_lifecycle() {
 
     #[async_trait]
     impl DatabaseConnection for DdlRecordingConnection {
-        async fn execute_query(&mut self, query: &rust_kysely::CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &rust_kysely::CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.executed.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -669,7 +726,10 @@ async fn test_integration_schema_ddl_full_lifecycle() {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -710,7 +770,8 @@ async fn test_integration_schema_ddl_full_lifecycle() {
         .if_not_exists()
         .add_column("id", "serial", |c| c.primary_key())
         .add_column("tenant_id", "int4", |c| {
-            c.references("tenants.id").on_delete(OnModifyForeignAction::Cascade)
+            c.references("tenants.id")
+                .on_delete(OnModifyForeignAction::Cascade)
         })
         .add_column("email", "varchar(255)", |c| c.not_null().unique())
         .add_column("role", "user_role", |c| c.default_to("user"))
@@ -746,22 +807,48 @@ async fn test_integration_schema_ddl_full_lifecycle() {
         .unwrap();
 
     // 7. DROP VIEW
-    db.schema().drop_view("active_tenants").if_exists().execute().await.unwrap();
+    db.schema()
+        .drop_view("active_tenants")
+        .if_exists()
+        .execute()
+        .await
+        .unwrap();
 
     // 8. DROP TABLE
-    db.schema().drop_table("users").if_exists().cascade().execute().await.unwrap();
+    db.schema()
+        .drop_table("users")
+        .if_exists()
+        .cascade()
+        .execute()
+        .await
+        .unwrap();
 
     // 9. DROP TYPE
-    db.schema().drop_type("user_role").if_exists().cascade().execute().await.unwrap();
+    db.schema()
+        .drop_type("user_role")
+        .if_exists()
+        .cascade()
+        .execute()
+        .await
+        .unwrap();
 
     let history = executed.lock().unwrap().clone();
     assert_eq!(history.len(), 9);
-    assert_eq!(history[0], "CREATE TYPE \"user_role\" AS ENUM ('admin', 'user', 'guest')");
+    assert_eq!(
+        history[0],
+        "CREATE TYPE \"user_role\" AS ENUM ('admin', 'user', 'guest')"
+    );
     assert_eq!(history[1], "CREATE TABLE IF NOT EXISTS \"tenants\" (\"id\" serial PRIMARY KEY, \"name\" varchar(100) NOT NULL)");
     assert_eq!(history[2], "CREATE TABLE IF NOT EXISTS \"users\" (\"id\" serial PRIMARY KEY, \"tenant_id\" int4 REFERENCES \"tenants\" (\"id\") ON DELETE CASCADE, \"email\" varchar(255) NOT NULL UNIQUE, \"role\" user_role DEFAULT ?)");
     assert_eq!(history[3], "CREATE UNIQUE INDEX \"idx_users_tenant_email\" ON \"users\" USING btree (\"tenant_id\", \"email\")");
-    assert_eq!(history[4], "ALTER TABLE \"users\" ADD COLUMN \"last_login\" timestamp NOT NULL");
-    assert_eq!(history[5], "CREATE VIEW \"active_tenants\" AS SELECT \"id\", \"name\" FROM \"tenants\"");
+    assert_eq!(
+        history[4],
+        "ALTER TABLE \"users\" ADD COLUMN \"last_login\" timestamp NOT NULL"
+    );
+    assert_eq!(
+        history[5],
+        "CREATE VIEW \"active_tenants\" AS SELECT \"id\", \"name\" FROM \"tenants\""
+    );
     assert_eq!(history[6], "DROP VIEW IF EXISTS \"active_tenants\"");
     assert_eq!(history[7], "DROP TABLE IF EXISTS \"users\" CASCADE");
     assert_eq!(history[8], "DROP TYPE IF EXISTS \"user_role\" CASCADE");
@@ -787,7 +874,10 @@ async fn test_integration_migrator_full_lifecycle() {
 
     #[async_trait::async_trait]
     impl DatabaseConnection for FullLifecycleConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             if query.sql.contains("SELECT") && query.sql.contains("kysely_migration") {
@@ -840,7 +930,10 @@ async fn test_integration_migrator_full_lifecycle() {
             }))
         }
 
-        async fn release_connection(&self, _conn: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _conn: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -856,8 +949,10 @@ async fn test_integration_migrator_full_lifecycle() {
         queries: Arc::clone(&recorded),
         migrated: Arc::clone(&migrated),
     });
-    let compiler: Arc<dyn rust_kysely::query_compiler::QueryCompiler> = Arc::new(DefaultQueryCompiler::new());
-    let dialect = CustomDialect::new(driver, Arc::clone(&compiler)).with_adapter(Arc::new(PostgresAdapter));
+    let compiler: Arc<dyn rust_kysely::query_compiler::QueryCompiler> =
+        Arc::new(DefaultQueryCompiler::new());
+    let dialect =
+        CustomDialect::new(driver, Arc::clone(&compiler)).with_adapter(Arc::new(PostgresAdapter));
     let db = Kysely::new(dialect);
 
     let provider = SimpleMigrationProvider::new()
@@ -896,10 +991,15 @@ async fn test_integration_migrator_full_lifecycle() {
     assert_eq!(res.results.len(), 3);
 
     // Verify PostgreSQL advisory lock was acquired and released
-    let q = recorded.lock().unwrap();
-    assert!(q.iter().any(|sql| sql.contains("pg_advisory_lock(3853314791062309107)")));
-    assert!(q.iter().any(|sql| sql.contains("pg_advisory_unlock(3853314791062309107)")));
-    drop(q);
+    {
+        let q = recorded.lock().unwrap();
+        assert!(q
+            .iter()
+            .any(|sql| sql.contains("pg_advisory_lock(3853314791062309107)")));
+        assert!(q
+            .iter()
+            .any(|sql| sql.contains("pg_advisory_unlock(3853314791062309107)")));
+    }
 
     // 3. Migrate down 1 step
     let res_down = migrator.migrate_down().await.unwrap();
@@ -930,7 +1030,8 @@ async fn test_integration_migrator_full_lifecycle() {
     assert_eq!(res_all_down.results[2].migration_name, "001_accounts");
 
     // 7. Test FileMigrationProvider integration
-    let temp_dir = std::env::temp_dir().join(format!("integration_migrator_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("integration_migrator_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&temp_dir);
     std::fs::create_dir_all(&temp_dir).unwrap();
 
@@ -939,11 +1040,7 @@ async fn test_integration_migrator_full_lifecycle() {
         "CREATE TABLE files (id serial PRIMARY KEY);",
     )
     .unwrap();
-    std::fs::write(
-        temp_dir.join("001_file.down.sql"),
-        "DROP TABLE files;",
-    )
-    .unwrap();
+    std::fs::write(temp_dir.join("001_file.down.sql"), "DROP TABLE files;").unwrap();
 
     let file_provider = FileMigrationProvider::from_folder(&temp_dir);
     let driver2 = Arc::new(FullLifecycleDriver {
@@ -977,7 +1074,10 @@ async fn test_integration_plugin_suite_combined() {
 
     #[async_trait::async_trait]
     impl DatabaseConnection for PluginRecordingConn {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             let row = Row::new(
@@ -1004,7 +1104,10 @@ async fn test_integration_plugin_suite_combined() {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -1029,8 +1132,12 @@ async fn test_integration_plugin_suite_combined() {
     let result = db
         .select_from("accounts")
         .select(["accountId", "userFullName", "totalOrdersCount"])
-        .inner_join("profiles", |j| j.on("profiles.account_id", "=", "accounts.id"))
-        .inner_join("profiles", |j| j.on("profiles.account_id", "=", "accounts.id"))
+        .inner_join("profiles", |j| {
+            j.on("profiles.account_id", "=", "accounts.id")
+        })
+        .inner_join("profiles", |j| {
+            j.on("profiles.account_id", "=", "accounts.id")
+        })
         .with_plugin(DeduplicateJoinsPlugin::new())
         .execute()
         .await
@@ -1041,17 +1148,32 @@ async fn test_integration_plugin_suite_combined() {
     let sql = &history[0];
 
     // 1. WithSchemaPlugin verified
-    assert!(sql.contains("\"enterprise_app\".\"accounts\""), "Should have schema qualified table: {sql}");
-    assert!(sql.contains("\"enterprise_app\".\"profiles\""), "Should have schema qualified join table: {sql}");
+    assert!(
+        sql.contains("\"enterprise_app\".\"accounts\""),
+        "Should have schema qualified table: {sql}"
+    );
+    assert!(
+        sql.contains("\"enterprise_app\".\"profiles\""),
+        "Should have schema qualified join table: {sql}"
+    );
 
     // 2. DeduplicateJoinsPlugin verified (only 1 JOIN clause despite being added twice)
     let join_count = sql.matches("JOIN").count();
     assert_eq!(join_count, 1, "Duplicate join must be deduplicated: {sql}");
 
     // 3. CamelCasePlugin AST transformation verified (compiled with snake_case columns)
-    assert!(sql.contains("\"account_id\""), "Should have snake_case account_id: {sql}");
-    assert!(sql.contains("\"user_full_name\""), "Should have snake_case user_full_name: {sql}");
-    assert!(sql.contains("\"total_orders_count\""), "Should have snake_case total_orders_count: {sql}");
+    assert!(
+        sql.contains("\"account_id\""),
+        "Should have snake_case account_id: {sql}"
+    );
+    assert!(
+        sql.contains("\"user_full_name\""),
+        "Should have snake_case user_full_name: {sql}"
+    );
+    assert!(
+        sql.contains("\"total_orders_count\""),
+        "Should have snake_case total_orders_count: {sql}"
+    );
 
     // 4. CamelCasePlugin Result transformation verified (result keys mapped back to camelCase)
     assert_eq!(result.rows.len(), 1);
@@ -1067,9 +1189,9 @@ async fn test_integration_plugin_suite_combined() {
 
 #[tokio::test]
 async fn test_integration_all_five_dialects_matrix() {
-    use rust_kysely::dialect::postgres::PostgresQueryCompiler;
-    use rust_kysely::dialect::mysql::MysqlQueryCompiler;
     use rust_kysely::dialect::mssql::MssqlQueryCompiler;
+    use rust_kysely::dialect::mysql::MysqlQueryCompiler;
+    use rust_kysely::dialect::postgres::PostgresQueryCompiler;
     use rust_kysely::dialect::sqlite::SqliteQueryCompiler;
     use rust_kysely::query_compiler::QueryCompiler;
     use rust_kysely::select_from;
@@ -1084,25 +1206,37 @@ async fn test_integration_all_five_dialects_matrix() {
     // 1. PostgreSQL compiler check: double quotes and $1 parameter
     let pg_compiler = PostgresQueryCompiler::new();
     let pg_query = pg_compiler.compile(&node);
-    assert_eq!(pg_query.sql, "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = $1");
+    assert_eq!(
+        pg_query.sql,
+        "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = $1"
+    );
     assert_eq!(pg_query.parameters.len(), 1);
 
     // 2. MySQL compiler check: backtick quotes and ? parameter
     let mysql_compiler = MysqlQueryCompiler::new();
     let mysql_query = mysql_compiler.compile(&node);
-    assert_eq!(mysql_query.sql, "SELECT `id`, `username` FROM `users` WHERE `active` = ?");
+    assert_eq!(
+        mysql_query.sql,
+        "SELECT `id`, `username` FROM `users` WHERE `active` = ?"
+    );
     assert_eq!(mysql_query.parameters.len(), 1);
 
     // 3. MSSQL compiler check: bracket quotes and @p1 parameter
     let mssql_compiler = MssqlQueryCompiler::new();
     let mssql_query = mssql_compiler.compile(&node);
-    assert_eq!(mssql_query.sql, "SELECT [id], [username] FROM [users] WHERE [active] = @p1");
+    assert_eq!(
+        mssql_query.sql,
+        "SELECT [id], [username] FROM [users] WHERE [active] = @p1"
+    );
     assert_eq!(mssql_query.parameters.len(), 1);
 
     // 4. SQLite compiler check: double quotes and ? parameter
     let sqlite_compiler = SqliteQueryCompiler::new();
     let sqlite_query = sqlite_compiler.compile(&node);
-    assert_eq!(sqlite_query.sql, "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = ?");
+    assert_eq!(
+        sqlite_query.sql,
+        "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = ?"
+    );
     assert_eq!(sqlite_query.parameters.len(), 1);
 
     // 5. PGlite: parity with PostgreSQL compiler

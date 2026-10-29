@@ -1,7 +1,7 @@
 //! Query execution pipeline coordinating compilation, connection management, and row extraction.
 
-use std::sync::Arc;
 use async_trait::async_trait;
+use std::sync::Arc;
 
 use crate::driver::{DatabaseConnection, Driver, DriverError};
 use crate::operation_node::OperationNode;
@@ -22,15 +22,23 @@ pub trait QueryExecutor: Send + Sync {
     async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError>;
 
     /// Compiles an AST node, executes it, and returns the first row if available.
-    async fn execute_node_take_first(&self, node: &OperationNode) -> Result<Option<Row>, DriverError> {
+    async fn execute_node_take_first(
+        &self,
+        node: &OperationNode,
+    ) -> Result<Option<Row>, DriverError> {
         let res = self.execute_node(node).await?;
         Ok(res.rows.into_iter().next())
     }
 
     /// Compiles an AST node, executes it, and returns the first row or errors if empty.
-    async fn execute_node_take_first_or_throw(&self, node: &OperationNode) -> Result<Row, DriverError> {
+    async fn execute_node_take_first_or_throw(
+        &self,
+        node: &OperationNode,
+    ) -> Result<Row, DriverError> {
         self.execute_node_take_first(node).await?.ok_or_else(|| {
-            DriverError::ExecutionFailed("Expected at least one row, but query returned none".into())
+            DriverError::ExecutionFailed(
+                "Expected at least one row, but query returned none".into(),
+            )
         })
     }
 
@@ -43,7 +51,9 @@ pub trait QueryExecutor: Send + Sync {
     /// Executes a compiled query and returns the first row or errors if empty.
     async fn execute_take_first_or_throw(&self, query: &CompiledQuery) -> Result<Row, DriverError> {
         self.execute_take_first(query).await?.ok_or_else(|| {
-            DriverError::ExecutionFailed("Expected at least one row, but query returned none".into())
+            DriverError::ExecutionFailed(
+                "Expected at least one row, but query returned none".into(),
+            )
         })
     }
 }
@@ -53,14 +63,22 @@ pub trait QueryExecutor: Send + Sync {
 #[async_trait]
 pub trait QueryExecutorExt {
     /// Executes a compiled query and returns the first scalar value of the first row.
-    async fn execute_take_first_val<T: FromRowValue + Send>(&self, query: &CompiledQuery) -> Result<Option<T>, DriverError>;
+    async fn execute_take_first_val<T: FromRowValue + Send>(
+        &self,
+        query: &CompiledQuery,
+    ) -> Result<Option<T>, DriverError>;
 }
 
 #[async_trait]
 impl<E: ?Sized + QueryExecutor> QueryExecutorExt for E {
-    async fn execute_take_first_val<T: FromRowValue + Send>(&self, query: &CompiledQuery) -> Result<Option<T>, DriverError> {
+    async fn execute_take_first_val<T: FromRowValue + Send>(
+        &self,
+        query: &CompiledQuery,
+    ) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first(query).await? {
-            let val = row.get_by_index::<T>(0).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let val = row
+                .get_by_index::<T>(0)
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(val))
         } else {
             Ok(None)
@@ -106,7 +124,10 @@ impl DefaultQueryExecutor {
     }
 
     /// Adds multiple plugins to this executor.
-    pub fn with_plugins(mut self, plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>) -> Self {
+    pub fn with_plugins(
+        mut self,
+        plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>,
+    ) -> Self {
         self.plugins.extend(plugins);
         self
     }
@@ -179,7 +200,9 @@ impl PluginExecutor {
 impl QueryExecutor for PluginExecutor {
     async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
         let query_id = QueryId::generate();
-        let transformed = self.plugin.transform_query(Arc::new(node.clone()), query_id);
+        let transformed = self
+            .plugin
+            .transform_query(Arc::new(node.clone()), query_id);
         let res = self.inner.execute_node(&transformed).await?;
         self.plugin.transform_result(res, query_id).await
     }
@@ -231,7 +254,10 @@ impl SingleConnectionExecutor {
     }
 
     /// Adds multiple plugins to this executor.
-    pub fn with_plugins(mut self, plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>) -> Self {
+    pub fn with_plugins(
+        mut self,
+        plugins: impl IntoIterator<Item = Arc<dyn KyselyPlugin>>,
+    ) -> Self {
         self.plugins.extend(plugins);
         self
     }
@@ -292,7 +318,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockConnection {
-        async fn execute_query(&mut self, _query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            _query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             Ok(QueryResult::with_rows(self.return_rows.clone()))
         }
     }
@@ -309,7 +338,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -349,29 +381,38 @@ mod tests {
         assert_eq!(first_throw.get::<i64>("count").unwrap(), 100);
 
         // execute_take_first_val
-        let first_val = executor.execute_take_first_val::<i64>(&query).await.unwrap();
+        let first_val = executor
+            .execute_take_first_val::<i64>(&query)
+            .await
+            .unwrap();
         assert_eq!(first_val, Some(10));
 
         // empty query result behavior
         let empty_driver = Arc::new(MockDriver {
             return_rows: Vec::new(),
         });
-        let empty_executor = DefaultQueryExecutor::new(empty_driver, Arc::new(DefaultQueryCompiler::new()));
+        let empty_executor =
+            DefaultQueryExecutor::new(empty_driver, Arc::new(DefaultQueryCompiler::new()));
 
         let empty_first = empty_executor.execute_take_first(&query).await.unwrap();
         assert_eq!(empty_first, None);
 
-        let empty_first_val = empty_executor.execute_take_first_val::<i64>(&query).await.unwrap();
+        let empty_first_val = empty_executor
+            .execute_take_first_val::<i64>(&query)
+            .await
+            .unwrap();
         assert_eq!(empty_first_val, None);
 
         let throw_err = empty_executor.execute_take_first_or_throw(&query).await;
         assert!(matches!(throw_err, Err(DriverError::ExecutionFailed(_))));
 
         // SingleConnectionExecutor test
-        let single_conn = Arc::new(tokio::sync::Mutex::new(Some(Box::new(MockConnection {
-            return_rows: rows,
-        }) as Box<dyn DatabaseConnection>)));
-        let single_exec = SingleConnectionExecutor::new(single_conn, Arc::new(DefaultQueryCompiler::new()));
+        let single_conn =
+            Arc::new(tokio::sync::Mutex::new(Some(
+                Box::new(MockConnection { return_rows: rows }) as Box<dyn DatabaseConnection>,
+            )));
+        let single_exec =
+            SingleConnectionExecutor::new(single_conn, Arc::new(DefaultQueryCompiler::new()));
         let single_res = single_exec.execute_query(&query).await.unwrap();
         assert_eq!(single_res.len(), 2);
     }

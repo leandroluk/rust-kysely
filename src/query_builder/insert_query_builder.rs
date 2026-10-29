@@ -1,15 +1,15 @@
 //! Fluent, immutable InsertQueryBuilder implementation.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
+use crate::driver::DriverError;
 use crate::expression::Expression;
 use crate::operation_node::{
     ColumnNode, InsertQueryNode, IntoValue, OperationNode, PrimitiveValueListNode, SelectionNode,
     Value, ValuesNode,
 };
-use crate::driver::DriverError;
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::on_conflict_builder::OnConflictBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
@@ -80,7 +80,9 @@ impl InsertQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node(&OperationNode::InsertQuery((*self.node).clone())).await
+        executor
+            .execute_node(&OperationNode::InsertQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, if any.
@@ -89,7 +91,9 @@ impl InsertQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first(&OperationNode::InsertQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first(&OperationNode::InsertQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, or returns an error if empty.
@@ -98,26 +102,37 @@ impl InsertQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first_or_throw(&OperationNode::InsertQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first_or_throw(&OperationNode::InsertQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and deserializes rows into a `Vec<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_into<T: serde::de::DeserializeOwned>(&self) -> Result<Vec<T>, DriverError> {
+    pub async fn execute_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Vec<T>, DriverError> {
         let res = self.execute().await?;
         res.rows
             .into_iter()
-            .map(|r| r.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string())))
+            .map(|r| {
+                r.into_record::<T>()
+                    .map_err(|e| DriverError::ExecutionFailed(e.to_string()))
+            })
             .collect()
     }
 
     /// Executes the query and deserializes the first row into `Option<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, DriverError> {
+    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first().await? {
-            let record = row.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let record = row
+                .into_record::<T>()
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(record))
         } else {
             Ok(None)
@@ -143,7 +158,9 @@ impl InsertQueryBuilder {
         if let Some(ref mut values_op) = q.values {
             if let OperationNode::Values(ref mut values_node) = Arc::make_mut(values_op) {
                 if let Some(first_row) = values_node.rows.first_mut() {
-                    if let OperationNode::PrimitiveValueList(ref mut list) = Arc::make_mut(first_row) {
+                    if let OperationNode::PrimitiveValueList(ref mut list) =
+                        Arc::make_mut(first_row)
+                    {
                         list.values.push(val);
                         return self;
                     }
@@ -151,8 +168,12 @@ impl InsertQueryBuilder {
             }
         }
 
-        let list_node = Arc::new(OperationNode::PrimitiveValueList(PrimitiveValueListNode::new([val])));
-        q.values = Some(Arc::new(OperationNode::Values(ValuesNode::new([list_node]))));
+        let list_node = Arc::new(OperationNode::PrimitiveValueList(
+            PrimitiveValueListNode::new([val]),
+        ));
+        q.values = Some(Arc::new(OperationNode::Values(ValuesNode::new([
+            list_node,
+        ]))));
 
         self
     }
@@ -433,10 +454,7 @@ mod tests {
         );
         assert_eq!(
             q2.parameters,
-            vec![
-                Value::from("charlie@example.com"),
-                Value::from("admin"),
-            ]
+            vec![Value::from("charlie@example.com"), Value::from("admin"),]
         );
     }
 
@@ -463,12 +481,11 @@ mod tests {
             .set("name", "Alice")
             .set("email", "alice@example.com")
             .on_conflict(|oc| {
-                oc.column("id")
-                  .do_update_set(|ub| {
-                      ub.set_ref("name", "excluded.name")
+                oc.column("id").do_update_set(|ub| {
+                    ub.set_ref("name", "excluded.name")
                         .set_ref("email", "excluded.email")
                         .where_("users.active", "=", true)
-                  })
+                })
             })
             .compile(&compiler);
 

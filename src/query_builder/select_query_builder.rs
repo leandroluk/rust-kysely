@@ -1,17 +1,17 @@
 //! Fluent, immutable SelectQueryBuilder implementation.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
+use crate::driver::DriverError;
 use crate::expression::{Expression, ExpressionBuilder, ExpressionWrapper};
 use crate::operation_node::{
     AndNode, ColumnNode, CommonTableExpressionNode, FromNode, GroupByNode, HavingNode,
-    IdentifierNode, IntoValue, JoinType, LimitNode, OffsetNode, OperationNode, OrderByItemNode,
-    OrderByNode, OrderDirection, OrderNulls, OrNode, ReferenceNode, SelectQueryNode, SelectionNode,
-    SetOperationNode, SetOperator, ValueNode, WhereNode, WithNode,
+    IdentifierNode, IntoValue, JoinType, LimitNode, OffsetNode, OperationNode, OrNode,
+    OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, ReferenceNode, SelectQueryNode,
+    SelectionNode, SetOperationNode, SetOperator, ValueNode, WhereNode, WithNode,
 };
-use crate::driver::DriverError;
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
@@ -82,7 +82,9 @@ impl SelectQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node(&OperationNode::SelectQuery((*self.node).clone())).await
+        executor
+            .execute_node(&OperationNode::SelectQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, if any.
@@ -91,7 +93,9 @@ impl SelectQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first(&OperationNode::SelectQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first(&OperationNode::SelectQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, or returns an error if empty.
@@ -100,26 +104,37 @@ impl SelectQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first_or_throw(&OperationNode::SelectQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first_or_throw(&OperationNode::SelectQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and deserializes rows into a `Vec<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_into<T: serde::de::DeserializeOwned>(&self) -> Result<Vec<T>, DriverError> {
+    pub async fn execute_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Vec<T>, DriverError> {
         let res = self.execute().await?;
         res.rows
             .into_iter()
-            .map(|r| r.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string())))
+            .map(|r| {
+                r.into_record::<T>()
+                    .map_err(|e| DriverError::ExecutionFailed(e.to_string()))
+            })
             .collect()
     }
 
     /// Executes the query and deserializes the first row into `Option<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, DriverError> {
+    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first().await? {
-            let record = row.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let record = row
+                .into_record::<T>()
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(record))
         } else {
             Ok(None)
@@ -139,9 +154,10 @@ impl SelectQueryBuilder {
     // @spec REQ-SEL-006
     pub fn select_all(mut self) -> Self {
         let q = SelectQueryNode::clone_mut(&mut self.node);
-        q.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Column(ColumnNode::new("*"))),
-        ))));
+        q.selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Column(ColumnNode::new("*"))),
+            ))));
         self
     }
 
@@ -150,9 +166,10 @@ impl SelectQueryBuilder {
     pub fn select_all_from(mut self, table: impl Into<CompactString>) -> Self {
         let q = SelectQueryNode::clone_mut(&mut self.node);
         let reference = ReferenceNode::with_table(table.into(), "*");
-        q.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Reference(reference)),
-        ))));
+        q.selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Reference(reference)),
+            ))));
         self
     }
 
@@ -445,10 +462,8 @@ impl SelectQueryBuilder {
         expr: impl IntoOrderByExpr,
         direction: impl IntoOrderDirection,
     ) -> Self {
-        let item = OrderByItemNode::new(
-            expr.into_order_by_expr(),
-            direction.into_order_direction(),
-        );
+        let item =
+            OrderByItemNode::new(expr.into_order_by_expr(), direction.into_order_direction());
         let q = SelectQueryNode::clone_mut(&mut self.node);
         if let Some(ref existing) = q.order_by {
             if let OperationNode::OrderBy(ob) = existing.as_ref() {
@@ -581,11 +596,7 @@ impl SelectQueryBuilder {
 
     /// Adds a recursive Common Table Expression (`WITH RECURSIVE cte AS (...)`).
     // @spec REQ-SEL-010
-    pub fn with_recursive(
-        mut self,
-        name: impl Into<CompactString>,
-        expr: impl Expression,
-    ) -> Self {
+    pub fn with_recursive(mut self, name: impl Into<CompactString>, expr: impl Expression) -> Self {
         self.append_cte(true, name, expr.to_operation_node());
         self
     }
@@ -665,7 +676,9 @@ pub trait IntoOrderByExpr {
 impl IntoOrderByExpr for &str {
     fn into_order_by_expr(self) -> Arc<OperationNode> {
         if let Some((tbl, col)) = self.split_once('.') {
-            Arc::new(OperationNode::Reference(ReferenceNode::with_table(tbl, col)))
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(
+                tbl, col,
+            )))
         } else {
             Arc::new(OperationNode::Column(ColumnNode::new(self)))
         }
@@ -814,7 +827,7 @@ mod tests {
             .select(["u.id"])
             .left_join("orders as o", |jb| {
                 jb.on_ref("o.user_id", "=", "u.id")
-                  .on("o.status", "=", "completed")
+                    .on("o.status", "=", "completed")
             })
             .compile(&compiler);
 
@@ -822,7 +835,10 @@ mod tests {
             q2.sql,
             "SELECT \"u\".\"id\" FROM \"users\" AS \"u\" LEFT JOIN \"orders\" AS \"o\" ON \"o\".\"user_id\" = \"u\".\"id\" AND \"o\".\"status\" = $1"
         );
-        assert_eq!(q2.parameters, vec![crate::operation_node::Value::from("completed")]);
+        assert_eq!(
+            q2.parameters,
+            vec![crate::operation_node::Value::from("completed")]
+        );
     }
 
     #[test]
@@ -965,7 +981,9 @@ mod tests {
         let compiler = PostgresQueryCompiler::new();
 
         // 1. CTE: WITH cte AS (SELECT ...)
-        let cte_query = select_from("users").select(["id"]).where_("active", "=", true);
+        let cte_query = select_from("users")
+            .select(["id"])
+            .where_("active", "=", true);
         let q1 = select_from("active_users")
             .with("active_users", cte_query)
             .select_all()
@@ -975,11 +993,18 @@ mod tests {
             q1.sql,
             "WITH \"active_users\" AS (SELECT \"id\" FROM \"users\" WHERE \"active\" = $1) SELECT * FROM \"active_users\""
         );
-        assert_eq!(q1.parameters, vec![crate::operation_node::Value::from(true)]);
+        assert_eq!(
+            q1.parameters,
+            vec![crate::operation_node::Value::from(true)]
+        );
 
         // 2. UNION & INTERSECT & EXCEPT
-        let q_a = select_from("users").select(["id"]).where_("role", "=", "admin");
-        let q_b = select_from("users").select(["id"]).where_("role", "=", "moderator");
+        let q_a = select_from("users")
+            .select(["id"])
+            .where_("role", "=", "admin");
+        let q_b = select_from("users")
+            .select(["id"])
+            .where_("role", "=", "moderator");
         let q_union = q_a.union(q_b).compile(&compiler);
 
         assert_eq!(

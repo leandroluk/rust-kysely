@@ -1,8 +1,8 @@
 //! Expression AST nodes: Binary, Unary, Case, When, Cast, Alias, Parens, And, Or.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::OperationNode;
 

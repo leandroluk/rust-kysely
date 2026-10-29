@@ -1,8 +1,8 @@
 //! Schema migrator engine coordinating locks, transactions, and migration state.
 
+use compact_str::CompactString;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use compact_str::CompactString;
 
 use crate::driver::DriverError;
 use crate::kysely::Kysely;
@@ -17,7 +17,9 @@ pub const NO_MIGRATIONS: &str = "__NO_MIGRATIONS__";
 
 /// Formats a `SystemTime` as an ISO 8601 UTC timestamp string without external dependencies.
 pub fn format_iso8601(time: std::time::SystemTime) -> String {
-    let dur = time.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+    let dur = time
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
     let total_secs = dur.as_secs();
     let millis = dur.subsec_millis();
 
@@ -79,7 +81,11 @@ pub struct MigrationResultSet {
 impl MigrationResultSet {
     /// Returns true if all attempted migrations succeeded and no error occurred.
     pub fn is_success(&self) -> bool {
-        self.error.is_none() && self.results.iter().all(|r| r.status == MigrationStatus::Success)
+        self.error.is_none()
+            && self
+                .results
+                .iter()
+                .all(|r| r.status == MigrationStatus::Success)
     }
 }
 
@@ -155,7 +161,9 @@ impl Migrator {
     }
 
     /// Queries the migration tracking table for already executed migrations.
-    async fn get_executed_migrations(&self) -> Result<BTreeMap<CompactString, CompactString>, DriverError> {
+    async fn get_executed_migrations(
+        &self,
+    ) -> Result<BTreeMap<CompactString, CompactString>, DriverError> {
         let rows = self
             .db
             .select_from(self.config.migration_table_name.clone())
@@ -309,7 +317,9 @@ impl Migrator {
         // Find the last executed migration by name
         if let Some((last_name, _)) = executed.into_iter().next_back() {
             if let Some(migration) = registered.get(&last_name) {
-                let step_res = self.run_migration_step(&last_name, migration, false).await?;
+                let step_res = self
+                    .run_migration_step(&last_name, migration, false)
+                    .await?;
                 let is_err = step_res.status == MigrationStatus::Error;
                 let err_msg = step_res.error.clone();
                 return Ok(MigrationResultSet {
@@ -346,7 +356,10 @@ impl Migrator {
         result
     }
 
-    async fn execute_migrate_to(&self, target_name: &str) -> Result<MigrationResultSet, DriverError> {
+    async fn execute_migrate_to(
+        &self,
+        target_name: &str,
+    ) -> Result<MigrationResultSet, DriverError> {
         self.ensure_migration_table().await?;
 
         let registered = self.provider.get_migrations().await?;
@@ -490,7 +503,6 @@ impl Migrator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::DatabaseConnection;
     use crate::driver::Driver;
@@ -498,6 +510,7 @@ mod tests {
     use crate::migration::traits::SqlMigration;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::QueryResult;
+    use std::sync::Mutex;
 
     struct MockMigratorConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -506,7 +519,10 @@ mod tests {
 
     #[async_trait::async_trait]
     impl DatabaseConnection for MockMigratorConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             // If it's a SELECT on kysely_migration, return mock rows of already migrated
@@ -529,21 +545,17 @@ mod tests {
 
             // If it's an INSERT into kysely_migration
             if query.sql.contains("INSERT INTO") && query.sql.contains("kysely_migration") {
-                if let Some(param) = query.parameters.first() {
-                    if let Value::Text(ref s) = param {
-                        self.migrated.lock().unwrap().push(s.to_string());
-                    }
+                if let Some(Value::Text(ref s)) = query.parameters.first() {
+                    self.migrated.lock().unwrap().push(s.to_string());
                 }
             }
 
             // If it's a DELETE from kysely_migration
             if query.sql.contains("DELETE FROM") && query.sql.contains("kysely_migration") {
-                if let Some(param) = query.parameters.first() {
-                    if let Value::Text(ref s) = param {
-                        let mut list = self.migrated.lock().unwrap();
-                        if let Some(pos) = list.iter().position(|x| x == s.as_str()) {
-                            list.remove(pos);
-                        }
+                if let Some(Value::Text(ref s)) = query.parameters.first() {
+                    let mut list = self.migrated.lock().unwrap();
+                    if let Some(pos) = list.iter().position(|x| x == s.as_str()) {
+                        list.remove(pos);
                     }
                 }
             }
@@ -566,7 +578,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 

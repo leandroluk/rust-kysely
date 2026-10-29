@@ -1,14 +1,16 @@
 //! SchemaModule coordinating DDL statement creation and execution.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::parser::IntoTableSource;
 use crate::query_executor::QueryExecutor;
 use crate::schema::alter_table_builder::{alter_table, AlterTableBuilder};
 use crate::schema::create_table_builder::{create_table, CreateTableBuilder};
 use crate::schema::drop_table_builder::{drop_table, DropTableBuilder};
-use crate::schema::index_builder::{create_index, drop_index, CreateIndexBuilder, DropIndexBuilder};
+use crate::schema::index_builder::{
+    create_index, drop_index, CreateIndexBuilder, DropIndexBuilder,
+};
 use crate::schema::type_builder::{create_type, drop_type, CreateTypeBuilder, DropTypeBuilder};
 use crate::schema::view_builder::{create_view, drop_view, CreateViewBuilder, DropViewBuilder};
 
@@ -83,13 +85,13 @@ impl SchemaModule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver, DriverError};
     use crate::kysely::Kysely;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::QueryResult;
+    use async_trait::async_trait;
+    use std::sync::Mutex;
 
     struct RecordingConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -97,7 +99,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for RecordingConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -115,7 +120,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -173,7 +181,10 @@ mod tests {
         let q = recorded.lock().unwrap();
         assert_eq!(q.len(), 4);
         assert!(q[0].starts_with("CREATE TABLE IF NOT EXISTS \"posts\""));
-        assert_eq!(q[1], "CREATE INDEX \"idx_posts_title\" ON \"posts\" (\"title\")");
+        assert_eq!(
+            q[1],
+            "CREATE INDEX \"idx_posts_title\" ON \"posts\" (\"title\")"
+        );
         assert!(q[2].starts_with("ALTER TABLE \"posts\" ADD COLUMN \"views\""));
         assert_eq!(q[3], "DROP TABLE IF EXISTS \"posts\" CASCADE");
     }

@@ -20,7 +20,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.executed.push(query.sql.clone());
             let row = Row::new(["id", "name"], [Value::from(1), Value::from("Test")]);
             Ok(QueryResult::with_rows(vec![row]))

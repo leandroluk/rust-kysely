@@ -1,7 +1,7 @@
 //! Fluent builders for CREATE VIEW and DROP VIEW statements.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::expression::Expression;
@@ -35,7 +35,10 @@ impl CreateViewBuilder {
     /// Creates a new `CreateViewBuilder`.
     pub fn new(name: impl Into<CompactString>) -> Self {
         Self {
-            node: CreateViewNode::new(name, Arc::new(OperationNode::SelectQuery(SelectQueryNode::new()))),
+            node: CreateViewNode::new(
+                name,
+                Arc::new(OperationNode::SelectQuery(SelectQueryNode::new())),
+            ),
             executor: None,
         }
     }

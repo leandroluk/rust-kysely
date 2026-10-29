@@ -1,10 +1,10 @@
 //! File-system based migration provider loading `.sql` migrations from disk.
 
+use async_trait::async_trait;
+use compact_str::CompactString;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use async_trait::async_trait;
-use compact_str::CompactString;
 
 use crate::driver::DriverError;
 use crate::migration::traits::{Migration, MigrationProvider, SqlMigration};
@@ -30,7 +30,9 @@ impl FileMigrationProvider {
     }
 
     /// Internal synchronous loader discovering and parsing files in the directory.
-    fn load_migrations_sync(&self) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
+    fn load_migrations_sync(
+        &self,
+    ) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
         if !self.folder.exists() {
             return Err(DriverError::ExecutionFailed(format!(
                 "Migration directory '{}' does not exist",
@@ -46,7 +48,8 @@ impl FileMigrationProvider {
             ))
         })?;
 
-        let mut raw_migrations: BTreeMap<String, (Option<String>, Option<String>)> = BTreeMap::new();
+        let mut raw_migrations: BTreeMap<String, (Option<String>, Option<String>)> =
+            BTreeMap::new();
 
         for entry in entries {
             let entry = entry.map_err(|e| {
@@ -115,7 +118,9 @@ impl FileMigrationProvider {
 
 #[async_trait]
 impl MigrationProvider for FileMigrationProvider {
-    async fn get_migrations(&self) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
+    async fn get_migrations(
+        &self,
+    ) -> Result<BTreeMap<CompactString, Arc<dyn Migration>>, DriverError> {
         self.load_migrations_sync()
     }
 }
@@ -126,7 +131,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_migration_provider() {
-        let temp_dir = std::env::temp_dir().join(format!("kysely_test_migrations_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("kysely_test_migrations_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir).unwrap();
 
@@ -136,22 +142,14 @@ mod tests {
             "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT);",
         )
         .unwrap();
-        std::fs::write(
-            temp_dir.join("001_users.down.sql"),
-            "DROP TABLE users;",
-        )
-        .unwrap();
+        std::fs::write(temp_dir.join("001_users.down.sql"), "DROP TABLE users;").unwrap();
 
         std::fs::write(
             temp_dir.join("002_posts.sql"),
             "CREATE TABLE posts (id SERIAL PRIMARY KEY, title TEXT);",
         )
         .unwrap();
-        std::fs::write(
-            temp_dir.join("002_posts.down.sql"),
-            "DROP TABLE posts;",
-        )
-        .unwrap();
+        std::fs::write(temp_dir.join("002_posts.down.sql"), "DROP TABLE posts;").unwrap();
 
         // Non-migration file that should be ignored
         std::fs::write(temp_dir.join("README.txt"), "This is a documentation file.").unwrap();
@@ -162,10 +160,13 @@ mod tests {
         assert_eq!(migrations.len(), 2);
 
         let keys: Vec<CompactString> = migrations.keys().cloned().collect();
-        assert_eq!(keys, vec![
-            CompactString::from("001_users"),
-            CompactString::from("002_posts"),
-        ]);
+        assert_eq!(
+            keys,
+            vec![
+                CompactString::from("001_users"),
+                CompactString::from("002_posts"),
+            ]
+        );
 
         // Clean up
         let _ = std::fs::remove_dir_all(&temp_dir);

@@ -4,8 +4,8 @@ pub mod expression_builder;
 pub mod function_module;
 pub mod wrapper;
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::operation_node::{AliasNode, IdentifierNode, OperationNode};
 pub use expression_builder::{parse_column_reference, ExpressionBuilder};
@@ -31,6 +31,8 @@ pub trait Expression<T = ()> {
     {
         let node = self.to_operation_node();
         let alias_node = Arc::new(OperationNode::Identifier(IdentifierNode::new(alias)));
-        ExpressionWrapper::new(Arc::new(OperationNode::Alias(AliasNode::new(node, alias_node))))
+        ExpressionWrapper::new(Arc::new(OperationNode::Alias(AliasNode::new(
+            node, alias_node,
+        ))))
     }
 }

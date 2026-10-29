@@ -1,7 +1,7 @@
 //! Query-level AST nodes: SelectQueryNode, InsertQueryNode, UpdateQueryNode, DeleteQueryNode.
 
-use std::sync::Arc;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::OperationNode;
 
@@ -239,9 +239,11 @@ mod tests {
         // Initial unique pointer: mutates in-place (pointer unchanged)
         let ptr_before = Arc::as_ptr(&query);
         let q_mut = SelectQueryNode::clone_mut(&mut query);
-        q_mut.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
-        ))));
+        q_mut
+            .selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
+            ))));
         let ptr_after = Arc::as_ptr(&query);
         assert_eq!(ptr_before, ptr_after, "Unique Arc must mutate in-place");
         assert_eq!(query.selections.len(), 1);
@@ -257,8 +259,14 @@ mod tests {
         )))));
 
         let ptr_cow = Arc::as_ptr(&query);
-        assert_ne!(ptr_before, ptr_cow, "Shared Arc must allocate a new copy on write");
+        assert_ne!(
+            ptr_before, ptr_cow,
+            "Shared Arc must allocate a new copy on write"
+        );
         assert!(query.from.is_some());
-        assert!(query_snapshot.from.is_none(), "Snapshot must remain unaffected");
+        assert!(
+            query_snapshot.from.is_none(),
+            "Snapshot must remain unaffected"
+        );
     }
 }

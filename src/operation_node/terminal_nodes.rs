@@ -1,8 +1,8 @@
 //! Terminal AST nodes representing identifiers, tables, columns, references, and raw SQL.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::{OperationNode, Value};
 
@@ -43,7 +43,9 @@ impl TableNode {
     /// Creates a new table node with explicit schema qualification.
     pub fn with_schema(schema: impl Into<CompactString>, table: impl Into<CompactString>) -> Self {
         Self {
-            schema: Some(Arc::new(OperationNode::Identifier(IdentifierNode::new(schema)))),
+            schema: Some(Arc::new(OperationNode::Identifier(IdentifierNode::new(
+                schema,
+            )))),
             table: Arc::new(OperationNode::Identifier(IdentifierNode::new(table))),
         }
     }
@@ -105,7 +107,9 @@ pub struct ValueNode {
 impl ValueNode {
     /// Creates a new scalar value node.
     pub fn new(value: impl Into<Value>) -> Self {
-        Self { value: value.into() }
+        Self {
+            value: value.into(),
+        }
     }
 }
 

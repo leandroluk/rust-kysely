@@ -1,7 +1,7 @@
 //! Plugin that applies a default database schema qualification to unqualified tables.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::operation_node::transformer::OperationNodeTransformer;
 use crate::operation_node::*;
@@ -14,7 +14,11 @@ struct WithSchemaTransformer {
 }
 
 impl OperationNodeTransformer for WithSchemaTransformer {
-    fn transform_table(&mut self, node: &TableNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_table(
+        &mut self,
+        node: &TableNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         if node.schema.is_none() {
             Arc::new(OperationNode::Table(TableNode {
                 schema: Some(Arc::new(OperationNode::Identifier(IdentifierNode::new(
@@ -61,12 +65,12 @@ impl KyselyPlugin for WithSchemaPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver, DriverError};
     use crate::kysely::Kysely;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::QueryResult;
+    use std::sync::Mutex;
 
     struct SchemaRecordingConn {
         queries: Arc<Mutex<Vec<String>>>,
@@ -74,7 +78,10 @@ mod tests {
 
     #[async_trait::async_trait]
     impl DatabaseConnection for SchemaRecordingConn {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -92,7 +99,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -145,10 +155,30 @@ mod tests {
         assert_eq!(recorded.len(), 4);
 
         // Verify all 4 statements qualified "users" and "posts" with "custom_schema"
-        assert!(recorded[0].contains("\"custom_schema\".\"users\""), "SELECT from table: {}", recorded[0]);
-        assert!(recorded[0].contains("\"custom_schema\".\"posts\""), "SELECT join table: {}", recorded[0]);
-        assert!(recorded[1].contains("\"custom_schema\".\"users\""), "INSERT table: {}", recorded[1]);
-        assert!(recorded[2].contains("\"custom_schema\".\"users\""), "UPDATE table: {}", recorded[2]);
-        assert!(recorded[3].contains("\"custom_schema\".\"users\""), "DELETE table: {}", recorded[3]);
+        assert!(
+            recorded[0].contains("\"custom_schema\".\"users\""),
+            "SELECT from table: {}",
+            recorded[0]
+        );
+        assert!(
+            recorded[0].contains("\"custom_schema\".\"posts\""),
+            "SELECT join table: {}",
+            recorded[0]
+        );
+        assert!(
+            recorded[1].contains("\"custom_schema\".\"users\""),
+            "INSERT table: {}",
+            recorded[1]
+        );
+        assert!(
+            recorded[2].contains("\"custom_schema\".\"users\""),
+            "UPDATE table: {}",
+            recorded[2]
+        );
+        assert!(
+            recorded[3].contains("\"custom_schema\".\"users\""),
+            "DELETE table: {}",
+            recorded[3]
+        );
     }
 }

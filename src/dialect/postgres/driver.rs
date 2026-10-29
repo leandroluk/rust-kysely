@@ -108,28 +108,47 @@ fn extract_value_from_row(row: &tokio_postgres::Row, idx: usize) -> Result<Value
     let ty = col.type_();
 
     if ty == &Type::BOOL {
-        let val: Option<bool> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<bool> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(Value::Bool).unwrap_or(Value::Null))
     } else if ty == &Type::INT2 {
-        let val: Option<i16> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<i16> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(|i| Value::I64(i as i64)).unwrap_or(Value::Null))
     } else if ty == &Type::INT4 {
-        let val: Option<i32> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<i32> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(|i| Value::I64(i as i64)).unwrap_or(Value::Null))
     } else if ty == &Type::INT8 {
-        let val: Option<i64> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<i64> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(Value::I64).unwrap_or(Value::Null))
     } else if ty == &Type::FLOAT4 {
-        let val: Option<f32> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<f32> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(|f| Value::F64(f as f64)).unwrap_or(Value::Null))
     } else if ty == &Type::FLOAT8 {
-        let val: Option<f64> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<f64> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(Value::F64).unwrap_or(Value::Null))
-    } else if ty == &Type::VARCHAR || ty == &Type::TEXT || ty == &Type::BPCHAR || ty == &Type::NAME {
-        let val: Option<String> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-        Ok(val.map(|s| Value::Text(CompactString::new(s))).unwrap_or(Value::Null))
+    } else if ty == &Type::VARCHAR || ty == &Type::TEXT || ty == &Type::BPCHAR || ty == &Type::NAME
+    {
+        let val: Option<String> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        Ok(val
+            .map(|s| Value::Text(CompactString::new(s)))
+            .unwrap_or(Value::Null))
     } else if ty == &Type::BYTEA {
-        let val: Option<Vec<u8>> = row.try_get(idx).map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+        let val: Option<Vec<u8>> = row
+            .try_get(idx)
+            .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
         Ok(val.map(Value::Bytes).unwrap_or(Value::Null))
     } else {
         // Fallback: try string or null
@@ -179,7 +198,10 @@ impl Driver for PostgresDriver {
         Ok(Box::new(PostgresConnection::new(client)))
     }
 
-    async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+    async fn release_connection(
+        &self,
+        _connection: Box<dyn DatabaseConnection>,
+    ) -> Result<(), DriverError> {
         Ok(())
     }
 
@@ -215,7 +237,7 @@ mod tests {
         assert!(matches!(res, Ok(IsNull::No)));
 
         // 4. Float conversion
-        let val_f64 = Value::F64(3.14159);
+        let val_f64 = Value::F64(core::f64::consts::PI);
         let res = val_f64.to_sql_checked(&Type::FLOAT8, &mut buf);
         assert!(matches!(res, Ok(IsNull::No)));
 

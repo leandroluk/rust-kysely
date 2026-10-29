@@ -295,7 +295,10 @@ mod tests {
     #[test]
     fn test_value_conversions() {
         assert_eq!(Value::from(42i32), Value::I64(42));
-        assert_eq!(Value::from("hello"), Value::Text(CompactString::new("hello")));
+        assert_eq!(
+            Value::from("hello"),
+            Value::Text(CompactString::new("hello"))
+        );
         assert_eq!(Value::from(true), Value::Bool(true));
         assert_eq!(Value::from(Option::<i32>::None), Value::Null);
         assert_eq!(Value::from(Some(100i64)), Value::I64(100));

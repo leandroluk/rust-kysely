@@ -117,7 +117,9 @@ impl<'a> CompilerVisitor<'a> {
 
     fn add_parameter(&mut self, val: Value) {
         self.parameters.push(val);
-        let placeholder = self.compiler.format_parameter_placeholder(self.parameters.len());
+        let placeholder = self
+            .compiler
+            .format_parameter_placeholder(self.parameters.len());
         self.append(&placeholder);
     }
 
@@ -962,12 +964,16 @@ mod tests {
 
         // Test SELECT "id", "name" FROM "users" WHERE "age" > ?
         let mut select = SelectQueryNode::new();
-        select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
-        ))));
-        select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("name"))),
-        ))));
+        select
+            .selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
+            ))));
+        select
+            .selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("name"))),
+            ))));
         select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
             OperationNode::Identifier(IdentifierNode::new("users")),
         )))));
@@ -993,7 +999,9 @@ mod tests {
         let compiler = DefaultQueryCompiler::new();
 
         // 1. CREATE TABLE
-        let mut create_table = CreateTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        let mut create_table = CreateTableNode::new(Arc::new(OperationNode::Identifier(
+            IdentifierNode::new("users"),
+        )));
         create_table.if_not_exists = true;
 
         let mut id_col = ColumnDefinitionNode::new("id", "serial");
@@ -1009,14 +1017,16 @@ mod tests {
         status_col.default_to = Some(Arc::new(OperationNode::Value(ValueNode::new("active"))));
         create_table.columns.push(status_col);
 
-        create_table.constraints.push(TableConstraintNode::ForeignKey {
-            name: Some("fk_user_org".into()),
-            columns: smallvec::smallvec!["org_id".into()],
-            target_table: "organizations".into(),
-            target_columns: smallvec::smallvec!["id".into()],
-            on_delete: Some(OnModifyForeignAction::Cascade),
-            on_update: None,
-        });
+        create_table
+            .constraints
+            .push(TableConstraintNode::ForeignKey {
+                name: Some("fk_user_org".into()),
+                columns: smallvec::smallvec!["org_id".into()],
+                target_table: "organizations".into(),
+                target_columns: smallvec::smallvec!["id".into()],
+                on_delete: Some(OnModifyForeignAction::Cascade),
+                on_update: None,
+            });
 
         let q1 = compiler.compile(&OperationNode::CreateTable(create_table));
         assert_eq!(
@@ -1025,8 +1035,14 @@ mod tests {
         );
 
         // 2. ALTER TABLE
-        let mut alter_table = AlterTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
-        alter_table.actions.push(AlterTableAction::AddColumn(ColumnDefinitionNode::new("age", "int4")));
+        let mut alter_table = AlterTableNode::new(Arc::new(OperationNode::Identifier(
+            IdentifierNode::new("users"),
+        )));
+        alter_table
+            .actions
+            .push(AlterTableAction::AddColumn(ColumnDefinitionNode::new(
+                "age", "int4",
+            )));
         alter_table.actions.push(AlterTableAction::DropColumn {
             name: "deprecated".into(),
             if_exists: true,
@@ -1043,7 +1059,9 @@ mod tests {
         );
 
         // 3. DROP TABLE
-        let mut drop_table = DropTableNode::new(Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        let mut drop_table = DropTableNode::new(Arc::new(OperationNode::Identifier(
+            IdentifierNode::new("users"),
+        )));
         drop_table.if_exists = true;
         drop_table.cascade = true;
 
@@ -1051,13 +1069,19 @@ mod tests {
         assert_eq!(q3.sql, "DROP TABLE IF EXISTS \"users\" CASCADE");
 
         // 4. CREATE INDEX
-        let mut create_idx = CreateIndexNode::new("users_email_idx", Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))));
+        let mut create_idx = CreateIndexNode::new(
+            "users_email_idx",
+            Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))),
+        );
         create_idx.unique = true;
         create_idx.columns.push("email".into());
         create_idx.using_method = Some("btree".into());
 
         let q4 = compiler.compile(&OperationNode::CreateIndex(create_idx));
-        assert_eq!(q4.sql, "CREATE UNIQUE INDEX \"users_email_idx\" ON \"users\" USING btree (\"email\")");
+        assert_eq!(
+            q4.sql,
+            "CREATE UNIQUE INDEX \"users_email_idx\" ON \"users\" USING btree (\"email\")"
+        );
 
         // 5. CREATE VIEW
         let select_ast = Arc::new(OperationNode::SelectQuery(SelectQueryNode::new()));
@@ -1066,7 +1090,10 @@ mod tests {
         create_view.materialized = true;
 
         let q5 = compiler.compile(&OperationNode::CreateView(create_view));
-        assert_eq!(q5.sql, "CREATE OR REPLACE MATERIALIZED VIEW \"active_users\" AS SELECT *");
+        assert_eq!(
+            q5.sql,
+            "CREATE OR REPLACE MATERIALIZED VIEW \"active_users\" AS SELECT *"
+        );
 
         // 6. CREATE TYPE
         let mut create_type = CreateTypeNode::new("user_status");
@@ -1075,6 +1102,9 @@ mod tests {
         create_type.enum_values.push("deleted".into());
 
         let q6 = compiler.compile(&OperationNode::CreateType(create_type));
-        assert_eq!(q6.sql, "CREATE TYPE \"user_status\" AS ENUM ('active', 'pending', 'deleted')");
+        assert_eq!(
+            q6.sql,
+            "CREATE TYPE \"user_status\" AS ENUM ('active', 'pending', 'deleted')"
+        );
     }
 }

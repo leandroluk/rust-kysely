@@ -74,9 +74,9 @@ impl FromRowValue for i64 {
 impl FromRowValue for i32 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -88,9 +88,9 @@ impl FromRowValue for i32 {
 impl FromRowValue for i16 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -102,9 +102,9 @@ impl FromRowValue for i16 {
 impl FromRowValue for i8 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -116,9 +116,9 @@ impl FromRowValue for i8 {
 impl FromRowValue for isize {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -130,9 +130,9 @@ impl FromRowValue for isize {
 impl FromRowValue for u64 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -144,9 +144,9 @@ impl FromRowValue for u64 {
 impl FromRowValue for u32 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -158,9 +158,9 @@ impl FromRowValue for u32 {
 impl FromRowValue for u16 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -172,9 +172,9 @@ impl FromRowValue for u16 {
 impl FromRowValue for u8 {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -186,9 +186,9 @@ impl FromRowValue for u8 {
 impl FromRowValue for usize {
     fn from_row_value(val: &Value, col: &str) -> Result<Self, ColumnError> {
         match val {
-            Value::I64(i) => (*i).try_into().map_err(|_| {
-                ColumnError::TypeMismatch(CompactString::new(col), val.to_string())
-            }),
+            Value::I64(i) => (*i)
+                .try_into()
+                .map_err(|_| ColumnError::TypeMismatch(CompactString::new(col), val.to_string())),
             _ => Err(ColumnError::TypeMismatch(
                 CompactString::new(col),
                 val.to_string(),
@@ -314,7 +314,11 @@ impl Row {
         self.columns
             .iter()
             .position(|c| c.as_str() == col)
-            .or_else(|| self.columns.iter().position(|c| c.eq_ignore_ascii_case(col)))
+            .or_else(|| {
+                self.columns
+                    .iter()
+                    .position(|c| c.eq_ignore_ascii_case(col))
+            })
     }
 
     /// Returns the raw `Value` at the given column index.
@@ -326,7 +330,9 @@ impl Row {
 
     /// Returns the raw `Value` for a given column name.
     pub fn get_value(&self, col: &str) -> Result<&Value, ColumnError> {
-        let idx = self.index_of(col).ok_or_else(|| ColumnError::NotFound(CompactString::new(col)))?;
+        let idx = self
+            .index_of(col)
+            .ok_or_else(|| ColumnError::NotFound(CompactString::new(col)))?;
         Ok(&self.values[idx])
     }
 
@@ -385,7 +391,9 @@ impl Row {
                     .unwrap_or(serde_json::Value::Null),
                 Value::Text(t) => serde_json::Value::String(t.to_string()),
                 Value::Bytes(b) => serde_json::Value::Array(
-                    b.iter().map(|&byte| serde_json::Value::Number(byte.into())).collect(),
+                    b.iter()
+                        .map(|&byte| serde_json::Value::Number(byte.into()))
+                        .collect(),
                 ),
             };
             map.insert(col.to_string(), json_val);
@@ -402,7 +410,14 @@ mod tests {
     #[test]
     fn test_row_extraction() {
         let row = Row::new(
-            vec!["id", "name", "is_active", "score", "extra_bytes", "nullable_val"],
+            vec![
+                "id",
+                "name",
+                "is_active",
+                "score",
+                "extra_bytes",
+                "nullable_val",
+            ],
             vec![
                 Value::I64(42),
                 Value::Text("Alice".into()),
@@ -418,7 +433,7 @@ mod tests {
         assert_eq!(row.get::<i32>("id").unwrap(), 42);
         assert_eq!(row.get::<String>("name").unwrap(), "Alice");
         assert_eq!(row.get::<CompactString>("name").unwrap(), "Alice");
-        assert_eq!(row.get::<bool>("is_active").unwrap(), true);
+        assert!(row.get::<bool>("is_active").unwrap());
         assert_eq!(row.get::<f64>("score").unwrap(), 98.5);
         assert_eq!(row.get::<Vec<u8>>("extra_bytes").unwrap(), vec![0xDE, 0xAD]);
 

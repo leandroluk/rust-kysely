@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::dialect::adapter::DialectAdapter;
 use crate::dialect::postgres::adapter::PostgresAdapter;
-use crate::dialect::Dialect;
 use crate::dialect::postgres::driver::PostgresDriver;
 use crate::dialect::postgres::query_compiler::PostgresQueryCompiler;
+use crate::dialect::Dialect;
 use crate::driver::{Driver, DriverError};
 use crate::query_compiler::QueryCompiler;
 

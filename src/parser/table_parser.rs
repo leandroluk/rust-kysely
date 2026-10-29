@@ -1,7 +1,7 @@
 //! Table source parser supporting table names, schema qualification, and aliases.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::expression_builder::ExpressionBuilder;
 use crate::expression::{Expression, ExpressionWrapper};

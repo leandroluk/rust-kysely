@@ -1,7 +1,7 @@
 //! Core plugin trait definition for AST query rewriting and result interception.
 
-use std::sync::Arc;
 use async_trait::async_trait;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::operation_node::OperationNode;
@@ -30,13 +30,13 @@ pub trait KyselyPlugin: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver};
     use crate::kysely::Kysely;
     use crate::operation_node::{LimitNode, OperationNode, Value};
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::Row;
+    use std::sync::Mutex;
 
     struct PipelineRecordingConnection {
         queries: Arc<Mutex<Vec<String>>>,
@@ -44,7 +44,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for PipelineRecordingConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             let row = Row::new(["count"], [Value::I64(42)]);
             Ok(QueryResult::with_rows(vec![row]))
@@ -63,7 +66,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -76,7 +82,11 @@ mod tests {
 
     #[async_trait]
     impl KyselyPlugin for LimitAndResultMultiplierPlugin {
-        fn transform_query(&self, node: Arc<OperationNode>, _query_id: QueryId) -> Arc<OperationNode> {
+        fn transform_query(
+            &self,
+            node: Arc<OperationNode>,
+            _query_id: QueryId,
+        ) -> Arc<OperationNode> {
             if let OperationNode::SelectQuery(ref select) = node.as_ref() {
                 let mut modified = select.clone();
                 modified.limit = Some(Arc::new(OperationNode::Limit(LimitNode::new(Arc::new(
@@ -95,7 +105,8 @@ mod tests {
         ) -> Result<QueryResult, DriverError> {
             for row in &mut result.rows {
                 if let Ok(v) = row.get::<i64>("count") {
-                    let new_row = Row::new(["count", "multiplied"], [Value::I64(v), Value::I64(v * 2)]);
+                    let new_row =
+                        Row::new(["count", "multiplied"], [Value::I64(v), Value::I64(v * 2)]);
                     *row = new_row;
                 }
             }
@@ -124,7 +135,11 @@ mod tests {
         // 1. Verify AST transform injected LIMIT 10
         let recorded = queries.lock().unwrap();
         assert_eq!(recorded.len(), 1);
-        assert!(recorded[0].contains("LIMIT ?"), "SQL should have limit clause: {}", recorded[0]);
+        assert!(
+            recorded[0].contains("LIMIT ?"),
+            "SQL should have limit clause: {}",
+            recorded[0]
+        );
 
         // 2. Verify Result transform modified row
         assert_eq!(result.rows.len(), 1);

@@ -1,12 +1,10 @@
 //! Fluent builder for ALTER TABLE statements.
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
-use crate::operation_node::{
-    AlterTableAction, AlterTableNode, OperationNode, TableConstraintNode,
-};
+use crate::operation_node::{AlterTableAction, AlterTableNode, OperationNode, TableConstraintNode};
 use crate::parser::IntoTableSource;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 use crate::query_executor::{QueryExecutor, QueryResult};
@@ -119,7 +117,9 @@ impl AlterTableBuilder {
         builder: F,
     ) -> Self
     where
-        F: FnOnce(crate::schema::constraint_builder::ForeignKeyConstraintBuilder) -> crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
+        F: FnOnce(
+            crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
+        ) -> crate::schema::constraint_builder::ForeignKeyConstraintBuilder,
     {
         let fk_builder = crate::schema::constraint_builder::ForeignKeyConstraintBuilder::new(
             Some(name.into()),
@@ -128,7 +128,9 @@ impl AlterTableBuilder {
             target_columns,
         );
         let built = builder(fk_builder).build();
-        self.node.actions.push(AlterTableAction::AddConstraint(built));
+        self.node
+            .actions
+            .push(AlterTableAction::AddConstraint(built));
         self
     }
 

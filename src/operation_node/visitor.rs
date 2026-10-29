@@ -479,12 +479,16 @@ mod tests {
     #[test]
     fn test_visitor() {
         let mut select = SelectQueryNode::new();
-        select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
-        ))));
-        select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
-            Arc::new(OperationNode::Identifier(IdentifierNode::new("name"))),
-        ))));
+        select
+            .selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("id"))),
+            ))));
+        select
+            .selections
+            .push(Arc::new(OperationNode::Selection(SelectionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new("name"))),
+            ))));
         select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
             OperationNode::Identifier(IdentifierNode::new("users")),
         )))));

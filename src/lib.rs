@@ -21,31 +21,27 @@ pub mod schema;
 pub mod transaction;
 pub mod util;
 
-pub use dialect::{CustomDialect, DefaultAdapter, Dialect, DialectAdapter};
+#[cfg(feature = "mssql")]
+pub use dialect::mssql::{
+    MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler, MSSQL_MIGRATION_LOCK_NAME,
+};
+#[cfg(feature = "mysql")]
+pub use dialect::mysql::{
+    MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler, MYSQL_MIGRATION_LOCK_NAME,
+};
+#[cfg(feature = "pglite")]
+pub use dialect::pglite::PGliteDialect;
 #[cfg(feature = "postgres")]
 pub use dialect::postgres::{
     PostgresAdapter, PostgresConnection, PostgresDialect, PostgresDriver, PostgresIntrospector,
     PostgresQueryCompiler, KYSELY_MIGRATION_LOCK_ID,
 };
 #[cfg(feature = "sqlite")]
-pub use dialect::sqlite::{
-    SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler,
-};
-#[cfg(feature = "mysql")]
-pub use dialect::mysql::{
-    MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler, MYSQL_MIGRATION_LOCK_NAME,
-};
-#[cfg(feature = "mssql")]
-pub use dialect::mssql::{
-    MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler, MSSQL_MIGRATION_LOCK_NAME,
-};
-#[cfg(feature = "pglite")]
-pub use dialect::pglite::PGliteDialect;
+pub use dialect::sqlite::{SqliteAdapter, SqliteDialect, SqliteIntrospector, SqliteQueryCompiler};
+pub use dialect::{CustomDialect, DefaultAdapter, Dialect, DialectAdapter};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
-pub use introspection::{
-    ColumnMetadata, DatabaseIntrospector, DatabaseMetadata, TableMetadata,
-};
+pub use introspection::{ColumnMetadata, DatabaseIntrospector, DatabaseMetadata, TableMetadata};
 pub use kysely::Kysely;
 pub use migration::{
     format_iso8601, FileMigrationProvider, Migration, MigrationInfo, MigrationProvider,
@@ -60,15 +56,15 @@ pub use plugin::{
 };
 pub use query_builder::{
     delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
-    IntoGroupBy, IntoOrderByExpr, IntoOrderDirection, IntoRowValues, JoinBuilder, OnConflictBuilder,
-    RowValues, SelectQueryBuilder, UpdateQueryBuilder,
+    IntoGroupBy, IntoOrderByExpr, IntoOrderDirection, IntoRowValues, JoinBuilder,
+    OnConflictBuilder, RowValues, SelectQueryBuilder, UpdateQueryBuilder,
 };
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
 pub use query_executor::{
-    ColumnError, DefaultQueryExecutor, FromRowValue, PluginExecutor, QueryExecutor, QueryExecutorExt,
-    QueryResult, Row, SingleConnectionExecutor,
+    ColumnError, DefaultQueryExecutor, FromRowValue, PluginExecutor, QueryExecutor,
+    QueryExecutorExt, QueryResult, Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
 pub use schema::{

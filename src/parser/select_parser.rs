@@ -1,8 +1,8 @@
 //! Projections and selection list parser implementing IntoSelections.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::expression::expression_builder::{parse_column_reference, ExpressionBuilder};
 use crate::expression::{Expression, ExpressionWrapper};
@@ -117,13 +117,17 @@ impl IntoSelections for Arc<OperationNode> {
 // 2. Arrays
 impl<T: IntoSelectionItem, const N: usize> IntoSelections for [T; N] {
     fn into_selections(self) -> SmallVec<[Arc<OperationNode>; 4]> {
-        self.into_iter().map(|item| item.into_selection_item()).collect()
+        self.into_iter()
+            .map(|item| item.into_selection_item())
+            .collect()
     }
 }
 
 impl<T: IntoSelectionItem> IntoSelections for Vec<T> {
     fn into_selections(self) -> SmallVec<[Arc<OperationNode>; 4]> {
-        self.into_iter().map(|item| item.into_selection_item()).collect()
+        self.into_iter()
+            .map(|item| item.into_selection_item())
+            .collect()
     }
 }
 
@@ -189,9 +193,8 @@ mod tests {
         assert_eq!(s3.len(), 3);
 
         // 4. Closure callback
-        let s4 = (|eb: &ExpressionBuilder| {
-            ("id", eb.fn_().count_all().as_("total"))
-        }).into_selections();
+        let s4 =
+            (|eb: &ExpressionBuilder| ("id", eb.fn_().count_all().as_("total"))).into_selections();
         assert_eq!(s4.len(), 2);
     }
 }

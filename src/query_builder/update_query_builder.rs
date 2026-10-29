@@ -1,15 +1,15 @@
 //! Fluent, immutable UpdateQueryBuilder implementation.
 
-use std::sync::Arc;
 use compact_str::CompactString;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
+use crate::driver::DriverError;
 use crate::expression::{Expression, ExpressionBuilder};
 use crate::operation_node::{
     AndNode, ColumnNode, ColumnUpdateNode, FromNode, IntoValue, JoinType, OperationNode, OrNode,
     ReferenceNode, SelectionNode, UpdateQueryNode, ValueNode, WhereNode,
 };
-use crate::driver::DriverError;
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
@@ -80,7 +80,9 @@ impl UpdateQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node(&OperationNode::UpdateQuery((*self.node).clone())).await
+        executor
+            .execute_node(&OperationNode::UpdateQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, if any.
@@ -89,7 +91,9 @@ impl UpdateQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first(&OperationNode::UpdateQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first(&OperationNode::UpdateQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and returns the first row, or returns an error if empty.
@@ -98,26 +102,37 @@ impl UpdateQueryBuilder {
         let executor = self.executor.as_ref().ok_or_else(|| {
             DriverError::ExecutionFailed("No QueryExecutor configured on QueryBuilder".into())
         })?;
-        executor.execute_node_take_first_or_throw(&OperationNode::UpdateQuery((*self.node).clone())).await
+        executor
+            .execute_node_take_first_or_throw(&OperationNode::UpdateQuery((*self.node).clone()))
+            .await
     }
 
     /// Executes the query and deserializes rows into a `Vec<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_into<T: serde::de::DeserializeOwned>(&self) -> Result<Vec<T>, DriverError> {
+    pub async fn execute_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Vec<T>, DriverError> {
         let res = self.execute().await?;
         res.rows
             .into_iter()
-            .map(|r| r.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string())))
+            .map(|r| {
+                r.into_record::<T>()
+                    .map_err(|e| DriverError::ExecutionFailed(e.to_string()))
+            })
             .collect()
     }
 
     /// Executes the query and deserializes the first row into `Option<T>`.
     // @spec REQ-EXEC-006
     #[cfg(feature = "json")]
-    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, DriverError> {
+    pub async fn execute_take_first_into<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Option<T>, DriverError> {
         if let Some(row) = self.execute_take_first().await? {
-            let record = row.into_record::<T>().map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let record = row
+                .into_record::<T>()
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             Ok(Some(record))
         } else {
             Ok(None)
@@ -160,11 +175,7 @@ impl UpdateQueryBuilder {
 
     /// Sets a column update with an arbitrary expression (`.set_expr("total", eb.fn().coalesce(...))`).
     // @spec REQ-MUT-007
-    pub fn set_expr<T>(
-        mut self,
-        col: impl Into<CompactString>,
-        expr: impl Expression<T>,
-    ) -> Self {
+    pub fn set_expr<T>(mut self, col: impl Into<CompactString>, expr: impl Expression<T>) -> Self {
         let update_node = Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
             Arc::new(OperationNode::Column(ColumnNode::new(col))),
             expr.to_operation_node(),
@@ -396,11 +407,7 @@ mod tests {
         );
         assert_eq!(
             q1.parameters,
-            vec![
-                Value::from("Bob"),
-                Value::from(35),
-                Value::from(42),
-            ]
+            vec![Value::from("Bob"), Value::from(35), Value::from(42),]
         );
 
         // 2. Complex update with set_ref, from, join, and where_expr

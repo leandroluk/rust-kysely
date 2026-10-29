@@ -22,7 +22,10 @@ pub trait Driver: Send + Sync {
     async fn acquire_connection(&self) -> Result<Box<dyn DatabaseConnection>, DriverError>;
 
     /// Releases an acquired connection back to the pool or closes it.
-    async fn release_connection(&self, connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError>;
+    async fn release_connection(
+        &self,
+        connection: Box<dyn DatabaseConnection>,
+    ) -> Result<(), DriverError>;
 
     /// Destroys and cleans up the driver and its connection pool.
     async fn destroy(&self) -> Result<(), DriverError>;

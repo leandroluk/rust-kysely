@@ -1,8 +1,8 @@
 //! Plugin mapping between camelCase application identifiers and snake_case database columns.
 
-use std::sync::Arc;
 use async_trait::async_trait;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::operation_node::transformer::OperationNodeTransformer;
@@ -89,7 +89,11 @@ struct CamelCaseTransformer {
 }
 
 impl OperationNodeTransformer for CamelCaseTransformer {
-    fn transform_column(&mut self, node: &ColumnNode, _orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_column(
+        &mut self,
+        node: &ColumnNode,
+        _orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         let transformed_col = self.transform_node(Arc::clone(&node.column));
         if Arc::ptr_eq(&transformed_col, &node.column) {
             Arc::clone(_orig)
@@ -100,10 +104,17 @@ impl OperationNodeTransformer for CamelCaseTransformer {
         }
     }
 
-    fn transform_table(&mut self, node: &TableNode, _orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_table(
+        &mut self,
+        node: &TableNode,
+        _orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         if self.options.convert_tables {
             let transformed_table = self.transform_node(Arc::clone(&node.table));
-            let transformed_schema = node.schema.as_ref().map(|s| self.transform_node(Arc::clone(s)));
+            let transformed_schema = node
+                .schema
+                .as_ref()
+                .map(|s| self.transform_node(Arc::clone(s)));
             Arc::new(OperationNode::Table(TableNode {
                 schema: transformed_schema,
                 table: transformed_table,
@@ -113,9 +124,15 @@ impl OperationNodeTransformer for CamelCaseTransformer {
         }
     }
 
-    fn transform_reference(&mut self, node: &ReferenceNode, _orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_reference(
+        &mut self,
+        node: &ReferenceNode,
+        _orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         let transformed_table = if self.options.convert_tables {
-            node.table.as_ref().map(|t| self.transform_node(Arc::clone(t)))
+            node.table
+                .as_ref()
+                .map(|t| self.transform_node(Arc::clone(t)))
         } else {
             node.table.clone()
         };
@@ -126,7 +143,11 @@ impl OperationNodeTransformer for CamelCaseTransformer {
         }))
     }
 
-    fn transform_column_update(&mut self, node: &ColumnUpdateNode, _orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_column_update(
+        &mut self,
+        node: &ColumnUpdateNode,
+        _orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         let transformed_col = self.transform_node(Arc::clone(&node.column));
         let transformed_val = self.transform_node(Arc::clone(&node.value));
         Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
@@ -135,7 +156,11 @@ impl OperationNodeTransformer for CamelCaseTransformer {
         )))
     }
 
-    fn transform_identifier(&mut self, node: &IdentifierNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_identifier(
+        &mut self,
+        node: &IdentifierNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         let snake = to_snake_case(&node.name);
         if snake == node.name.as_str() {
             Arc::clone(orig)
@@ -202,12 +227,12 @@ impl KyselyPlugin for CamelCasePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver};
     use crate::kysely::Kysely;
     use crate::operation_node::Value;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
+    use std::sync::Mutex;
 
     struct CamelCaseRecordingConn {
         queries: Arc<Mutex<Vec<String>>>,
@@ -215,7 +240,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for CamelCaseRecordingConn {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
 
             // Simulate database returning snake_case column names
@@ -243,7 +271,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -276,9 +307,18 @@ mod tests {
         let recorded = queries.lock().unwrap();
         assert_eq!(recorded.len(), 1);
         let sql = &recorded[0];
-        assert!(sql.contains("\"user_id\""), "Should contain snake_case user_id: {sql}");
-        assert!(sql.contains("\"first_name\""), "Should contain snake_case first_name: {sql}");
-        assert!(sql.contains("\"created_date_at\""), "Should contain snake_case created_date_at: {sql}");
+        assert!(
+            sql.contains("\"user_id\""),
+            "Should contain snake_case user_id: {sql}"
+        );
+        assert!(
+            sql.contains("\"first_name\""),
+            "Should contain snake_case first_name: {sql}"
+        );
+        assert!(
+            sql.contains("\"created_date_at\""),
+            "Should contain snake_case created_date_at: {sql}"
+        );
 
         // 2. Verify QueryResult row keys mapped back to camelCase
         assert_eq!(result.rows.len(), 1);

@@ -1,7 +1,7 @@
 //! AST transformation trait enabling query rewriting plugins and optimizers.
 
-use std::sync::Arc;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::*;
 
@@ -389,11 +389,7 @@ pub trait OperationNodeTransformer {
     }
 
     /// Transforms a WithNode.
-    fn transform_with(
-        &mut self,
-        node: &WithNode,
-        orig: &Arc<OperationNode>,
-    ) -> Arc<OperationNode> {
+    fn transform_with(&mut self, node: &WithNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
         let mut changed = false;
         let new_exprs: SmallVec<[Arc<OperationNode>; 2]> = node
             .expressions
@@ -494,11 +490,7 @@ pub trait OperationNodeTransformer {
     }
 
     /// Transforms a CaseNode.
-    fn transform_case(
-        &mut self,
-        node: &CaseNode,
-        orig: &Arc<OperationNode>,
-    ) -> Arc<OperationNode> {
+    fn transform_case(&mut self, node: &CaseNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
         let new_value = node
             .value
             .as_ref()
@@ -546,11 +538,7 @@ pub trait OperationNodeTransformer {
     }
 
     /// Transforms a WhenNode.
-    fn transform_when(
-        &mut self,
-        node: &WhenNode,
-        orig: &Arc<OperationNode>,
-    ) -> Arc<OperationNode> {
+    fn transform_when(&mut self, node: &WhenNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
         let new_cond = self.transform_node(Arc::clone(&node.condition));
         let new_res = self.transform_node(Arc::clone(&node.result));
 
@@ -565,11 +553,7 @@ pub trait OperationNodeTransformer {
     }
 
     /// Transforms a CastNode.
-    fn transform_cast(
-        &mut self,
-        node: &CastNode,
-        orig: &Arc<OperationNode>,
-    ) -> Arc<OperationNode> {
+    fn transform_cast(&mut self, node: &CastNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
         let new_expr = self.transform_node(Arc::clone(&node.expr));
         if Arc::ptr_eq(&node.expr, &new_expr) {
             Arc::clone(orig)
@@ -615,11 +599,7 @@ pub trait OperationNodeTransformer {
     }
 
     /// Transforms an AndNode.
-    fn transform_and(
-        &mut self,
-        node: &AndNode,
-        orig: &Arc<OperationNode>,
-    ) -> Arc<OperationNode> {
+    fn transform_and(&mut self, node: &AndNode, orig: &Arc<OperationNode>) -> Arc<OperationNode> {
         let new_left = self.transform_node(Arc::clone(&node.left));
         let new_right = self.transform_node(Arc::clone(&node.right));
 
@@ -685,7 +665,10 @@ pub trait OperationNodeTransformer {
     ) -> Arc<OperationNode> {
         let mut changed = false;
 
-        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        let new_with = node
+            .with
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
         if match (&node.with, &new_with) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -694,7 +677,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        let new_from = node
+            .from
+            .as_ref()
+            .map(|f| self.transform_node(Arc::clone(f)));
         if match (&node.from, &new_from) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -767,7 +753,10 @@ pub trait OperationNodeTransformer {
     ) -> Arc<OperationNode> {
         let mut changed = false;
 
-        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        let new_with = node
+            .with
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
         if match (&node.with, &new_with) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -776,7 +765,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_into = node.into.as_ref().map(|i| self.transform_node(Arc::clone(i)));
+        let new_into = node
+            .into
+            .as_ref()
+            .map(|i| self.transform_node(Arc::clone(i)));
         if match (&node.into, &new_into) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -785,7 +777,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_values = node.values.as_ref().map(|v| self.transform_node(Arc::clone(v)));
+        let new_values = node
+            .values
+            .as_ref()
+            .map(|v| self.transform_node(Arc::clone(v)));
         if match (&node.values, &new_values) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -794,7 +789,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_on_conflict = node.on_conflict.as_ref().map(|o| self.transform_node(Arc::clone(o)));
+        let new_on_conflict = node
+            .on_conflict
+            .as_ref()
+            .map(|o| self.transform_node(Arc::clone(o)));
         if match (&node.on_conflict, &new_on_conflict) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -825,7 +823,10 @@ pub trait OperationNodeTransformer {
     ) -> Arc<OperationNode> {
         let mut changed = false;
 
-        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        let new_with = node
+            .with
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
         if match (&node.with, &new_with) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -834,7 +835,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_table = node.table.as_ref().map(|t| self.transform_node(Arc::clone(t)));
+        let new_table = node
+            .table
+            .as_ref()
+            .map(|t| self.transform_node(Arc::clone(t)));
         if match (&node.table, &new_table) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -843,7 +847,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        let new_from = node
+            .from
+            .as_ref()
+            .map(|f| self.transform_node(Arc::clone(f)));
         if match (&node.from, &new_from) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -899,7 +906,10 @@ pub trait OperationNodeTransformer {
     ) -> Arc<OperationNode> {
         let mut changed = false;
 
-        let new_with = node.with.as_ref().map(|w| self.transform_node(Arc::clone(w)));
+        let new_with = node
+            .with
+            .as_ref()
+            .map(|w| self.transform_node(Arc::clone(w)));
         if match (&node.with, &new_with) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,
@@ -908,7 +918,10 @@ pub trait OperationNodeTransformer {
             changed = true;
         }
 
-        let new_from = node.from.as_ref().map(|f| self.transform_node(Arc::clone(f)));
+        let new_from = node
+            .from
+            .as_ref()
+            .map(|f| self.transform_node(Arc::clone(f)));
         if match (&node.from, &new_from) {
             (Some(a), Some(b)) => !Arc::ptr_eq(a, b),
             (None, None) => false,

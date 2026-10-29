@@ -1,7 +1,7 @@
 //! SQL aggregate and scalar function factory (`count`, `max`, `min`, `avg`, `sum`, `coalesce`).
 
-use std::sync::Arc;
 use compact_str::CompactString;
+use std::sync::Arc;
 
 use crate::expression::expression_builder::parse_column_reference;
 use crate::expression::{Expression, ExpressionWrapper};
@@ -65,9 +65,7 @@ impl FunctionModule {
         &self,
         arguments: impl IntoIterator<Item = impl Expression<U>>,
     ) -> ExpressionWrapper<()> {
-        let args = arguments
-            .into_iter()
-            .map(|a| a.to_operation_node());
+        let args = arguments.into_iter().map(|a| a.to_operation_node());
         let func = FunctionNode::new("COALESCE", args);
         ExpressionWrapper::new(Arc::new(OperationNode::Function(func)))
     }
@@ -100,9 +98,7 @@ mod tests {
         assert_eq!(compiled_max.sql, "MAX(\"u\".\"score\")");
 
         // COALESCE("a" = $1)
-        let coalesce_expr = eb.fn_().coalesce([
-            eb.cmp("a", "=", 1),
-        ]);
+        let coalesce_expr = eb.fn_().coalesce([eb.cmp("a", "=", 1)]);
         let compiled_coalesce = compiler.compile(&coalesce_expr.to_operation_node());
         assert_eq!(compiled_coalesce.sql, "COALESCE(\"a\" = $1)");
     }

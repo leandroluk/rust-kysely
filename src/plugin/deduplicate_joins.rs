@@ -1,7 +1,7 @@
 //! Plugin that removes duplicate identical JOIN clauses from query ASTs.
 
-use std::sync::Arc;
 use smallvec::SmallVec;
+use std::sync::Arc;
 
 use crate::operation_node::transformer::OperationNodeTransformer;
 use crate::operation_node::*;
@@ -12,7 +12,11 @@ use crate::util::QueryId;
 struct DeduplicateJoinsTransformer;
 
 impl OperationNodeTransformer for DeduplicateJoinsTransformer {
-    fn transform_select_query(&mut self, node: &SelectQueryNode, _orig: &Arc<OperationNode>) -> Arc<OperationNode> {
+    fn transform_select_query(
+        &mut self,
+        node: &SelectQueryNode,
+        _orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
         let mut unique_joins = SmallVec::<[Arc<OperationNode>; 2]>::new();
         for join in &node.joins {
             let transformed_join = self.transform_node(Arc::clone(join));
@@ -63,12 +67,12 @@ impl KyselyPlugin for DeduplicateJoinsPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::dialect::CustomDialect;
     use crate::driver::{DatabaseConnection, Driver, DriverError};
     use crate::kysely::Kysely;
     use crate::query_compiler::{CompiledQuery, DefaultQueryCompiler};
     use crate::query_executor::QueryResult;
+    use std::sync::Mutex;
 
     struct JoinRecordingConn {
         queries: Arc<Mutex<Vec<String>>>,
@@ -76,7 +80,10 @@ mod tests {
 
     #[async_trait::async_trait]
     impl DatabaseConnection for JoinRecordingConn {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             self.queries.lock().unwrap().push(query.sql.clone());
             Ok(QueryResult::default())
         }
@@ -94,7 +101,10 @@ mod tests {
             }))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -129,6 +139,9 @@ mod tests {
 
         // Count occurrences of "JOIN"
         let join_count = sql.matches("JOIN").count();
-        assert_eq!(join_count, 1, "Expected only 1 JOIN after deduplication, got: {sql}");
+        assert_eq!(
+            join_count, 1,
+            "Expected only 1 JOIN after deduplication, got: {sql}"
+        );
     }
 }

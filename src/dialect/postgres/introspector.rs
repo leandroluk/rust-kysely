@@ -1,7 +1,7 @@
 //! PostgreSQL schema and catalog introspector.
 
-use std::sync::Arc;
 use async_trait::async_trait;
+use std::sync::Arc;
 
 use crate::driver::DriverError;
 use crate::introspection::{ColumnMetadata, DatabaseIntrospector, TableMetadata};
@@ -33,7 +33,10 @@ impl DatabaseIntrospector for PostgresIntrospector {
 
         let mut schemas = Vec::with_capacity(result.len());
         for row in result.rows {
-            schemas.push(row.get::<String>("schema_name").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?);
+            schemas.push(
+                row.get::<String>("schema_name")
+                    .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?,
+            );
         }
         Ok(schemas)
     }
@@ -58,11 +61,21 @@ impl DatabaseIntrospector for PostgresIntrospector {
             std::collections::HashMap::new();
 
         for row in columns_result.rows {
-            let table_name = row.get::<String>("table_name").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let col_name = row.get::<String>("column_name").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let data_type = row.get::<String>("data_type").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let is_nullable_str = row.get::<String>("is_nullable").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let col_default = row.get_opt::<String>("column_default").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let table_name = row
+                .get::<String>("table_name")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let col_name = row
+                .get::<String>("column_name")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let data_type = row
+                .get::<String>("data_type")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let is_nullable_str = row
+                .get::<String>("is_nullable")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let col_default = row
+                .get_opt::<String>("column_default")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
 
             let is_nullable = is_nullable_str.eq_ignore_ascii_case("yes");
             let has_default_value = col_default.is_some();
@@ -85,9 +98,15 @@ impl DatabaseIntrospector for PostgresIntrospector {
 
         let mut tables = Vec::with_capacity(tables_result.len());
         for row in tables_result.rows {
-            let table_name = row.get::<String>("table_name").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let schema_name = row.get_opt::<String>("table_schema").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
-            let table_type = row.get::<String>("table_type").map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let table_name = row
+                .get::<String>("table_name")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let schema_name = row
+                .get_opt::<String>("table_schema")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
+            let table_type = row
+                .get::<String>("table_type")
+                .map_err(|e| DriverError::ExecutionFailed(e.to_string()))?;
             let is_view = table_type.to_uppercase().contains("VIEW");
 
             let columns = columns_by_table.remove(&table_name).unwrap_or_default();
@@ -118,7 +137,10 @@ mod tests {
 
     #[async_trait]
     impl DatabaseConnection for MockIntrospectionConnection {
-        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        async fn execute_query(
+            &mut self,
+            query: &CompiledQuery,
+        ) -> Result<QueryResult, DriverError> {
             if query.sql.contains("information_schema.schemata") {
                 Ok(QueryResult::with_rows(vec![
                     Row::new(vec!["schema_name"], vec![Value::from("public")]),
@@ -128,17 +150,31 @@ mod tests {
                 Ok(QueryResult::with_rows(vec![
                     Row::new(
                         vec!["table_name", "table_schema", "table_type"],
-                        vec![Value::from("users"), Value::from("public"), Value::from("BASE TABLE")],
+                        vec![
+                            Value::from("users"),
+                            Value::from("public"),
+                            Value::from("BASE TABLE"),
+                        ],
                     ),
                     Row::new(
                         vec!["table_name", "table_schema", "table_type"],
-                        vec![Value::from("user_summary"), Value::from("public"), Value::from("VIEW")],
+                        vec![
+                            Value::from("user_summary"),
+                            Value::from("public"),
+                            Value::from("VIEW"),
+                        ],
                     ),
                 ]))
             } else if query.sql.contains("information_schema.columns") {
                 Ok(QueryResult::with_rows(vec![
                     Row::new(
-                        vec!["table_name", "column_name", "data_type", "is_nullable", "column_default"],
+                        vec![
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                        ],
                         vec![
                             Value::from("users"),
                             Value::from("id"),
@@ -148,7 +184,13 @@ mod tests {
                         ],
                     ),
                     Row::new(
-                        vec!["table_name", "column_name", "data_type", "is_nullable", "column_default"],
+                        vec![
+                            "table_name",
+                            "column_name",
+                            "data_type",
+                            "is_nullable",
+                            "column_default",
+                        ],
                         vec![
                             Value::from("users"),
                             Value::from("name"),
@@ -172,7 +214,10 @@ mod tests {
             Ok(Box::new(MockIntrospectionConnection))
         }
 
-        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+        async fn release_connection(
+            &self,
+            _connection: Box<dyn DatabaseConnection>,
+        ) -> Result<(), DriverError> {
             Ok(())
         }
 
@@ -200,24 +245,24 @@ mod tests {
 
         let users_table = &tables[0];
         assert_eq!(users_table.name, "users");
-        assert_eq!(users_table.is_view, false);
+        assert!(!users_table.is_view);
         assert_eq!(users_table.columns.len(), 2);
 
         let id_col = &users_table.columns[0];
         assert_eq!(id_col.name, "id");
         assert_eq!(id_col.data_type, "bigint");
-        assert_eq!(id_col.is_nullable, false);
-        assert_eq!(id_col.has_default_value, true);
-        assert_eq!(id_col.is_auto_incrementing, true);
+        assert!(!id_col.is_nullable);
+        assert!(id_col.has_default_value);
+        assert!(id_col.is_auto_incrementing);
 
         let name_col = &users_table.columns[1];
         assert_eq!(name_col.name, "name");
-        assert_eq!(name_col.is_nullable, true);
-        assert_eq!(name_col.has_default_value, false);
-        assert_eq!(name_col.is_auto_incrementing, false);
+        assert!(name_col.is_nullable);
+        assert!(!name_col.has_default_value);
+        assert!(!name_col.is_auto_incrementing);
 
         let view_table = &tables[1];
         assert_eq!(view_table.name, "user_summary");
-        assert_eq!(view_table.is_view, true);
+        assert!(view_table.is_view);
     }
 }
