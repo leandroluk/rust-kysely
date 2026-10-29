@@ -18,7 +18,7 @@
 - **Done when**: `sql("SELECT * FROM u WHERE id = ").bind(42)` produces valid parameterized `RawNode` and compiles to expected SQL with parameters.
 - **Gate**: `cargo test test_raw_builder`
 
-### TASK-EXPR-003: Implement sql helper functions (raw, id, table, lit, join)
+### TASK-EXPR-003: Implement sql helper functions (raw, id, table, lit, join) [x]
 - **REQ**: REQ-EXPR-003, REQ-EXPR-004, REQ-EXPR-005
 - **Symbols**: `sql::raw`, `sql::id`, `sql::table`, `sql::lit`, `sql::join`
 - **What**: Implement standalone helpers in namespace `sql::*` for verbatim raw snippets, quoted identifiers, table nodes, escaped literals, and delimiter-separated joins.

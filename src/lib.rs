@@ -21,5 +21,11 @@ pub use query_compiler::{
 pub use raw_builder::{sql, RawBuilder};
 pub use util::QueryId;
 
+/// Namespace containing raw SQL helper functions (`sql::raw`, `sql::id`, `sql::table`, `sql::lit`, `sql::join`).
+pub mod sql {
+    pub use crate::raw_builder::helpers::{id, join, lit, raw, table};
+    pub use crate::raw_builder::sql;
+}
+
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
