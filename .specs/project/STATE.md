@@ -4,13 +4,16 @@
 - **Current Milestone**: Milestone 1 (Core AST & Compilador PostgreSQL) — Em Execução
 - **Active Feature**: [01-core-ast-compiler](../features/01-core-ast-compiler/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-AST-001
+- **Active Task**: TASK-AST-002
 - **Blockers**: None
 
 ## Cost
 - Documentação completa do `.specs/` realizada (9 especificações formais de features com requisitos REQ-* mapeados).
 - Design e quebra em 8 tarefas atômicas concluídos para a Milestone 1 (`TASK-AST-001` a `TASK-AST-008`).
 - Footprint control e harness de teste inicial validados (`target/` ~250MB, zero `.pdb`s descontrolados).
+
+## Recent Progress (Last 10)
+- 2026-10-29 TASK-AST-001 complete. Gate: 3/3 pass. [REQ-AST-005] [REQ-AST-001]
 
 ## Decisions (Recent 5)
 1. **Design e Decomposição em Tasks da Milestone 1**: Definida a arquitetura completa do AST em enum `OperationNode`, identificadores zero-alocação com `CompactStr`, otimizações via `SmallVec`, CoW com `Arc::make_mut` e compilador de dois níveis (`DefaultQueryCompiler` ANSI e `PostgresQueryCompiler`).
@@ -20,7 +23,7 @@
 5. **Eliminação do `.into()` em Mutations**: Validações de inserção e atualização utilizam `val: impl IntoValue` com métodos `.set(col, val)` e closure builders `.values(|v| ...)`.
 
 ## Todos
-- [ ] TASK-AST-001: Implement QueryId generator and Value scalar representation — Execute phase
+- [x] TASK-AST-001: Implement QueryId generator and Value scalar representation — Execute phase
 - [ ] TASK-AST-002: Implement Terminal & Core Identifier AST nodes — Execute phase
 - [ ] TASK-AST-003: Implement Clause and Expression AST nodes — Execute phase
 - [ ] TASK-AST-004: Implement Query AST nodes with Copy-on-Write support — Execute phase

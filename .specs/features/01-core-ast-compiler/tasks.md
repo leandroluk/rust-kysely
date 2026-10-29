@@ -1,6 +1,6 @@
 # Tasks: 01 — Core OperationNode AST, Visitors & PostgreSQL Compiler
 
-### TASK-AST-001: Implement QueryId generator and Value scalar representation
+### TASK-AST-001: Implement QueryId generator and Value scalar representation [x]
 - **REQ**: REQ-AST-005, REQ-AST-001
 - **Symbols**: `QueryId`, `Value`
 - **What**: Create 64-bit atomic/random `QueryId` in `src/util/query_id.rs` and the SQL literal `Value` enum (Null, Bool, I64, F64, String, Bytes) in `src/operation_node/value.rs`.

@@ -4,5 +4,11 @@
 
 #![warn(missing_docs)]
 
+pub mod operation_node;
+pub mod util;
+
+pub use operation_node::Value;
+pub use util::QueryId;
+
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
