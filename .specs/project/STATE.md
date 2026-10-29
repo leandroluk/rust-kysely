@@ -4,7 +4,7 @@
 - **Current Milestone**: Milestone 1 (Core AST & Compilador PostgreSQL) — Em Execução
 - **Active Feature**: [01-core-ast-compiler](../features/01-core-ast-compiler/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-AST-007
+- **Active Task**: TASK-AST-008
 - **Blockers**: None
 
 ## Cost
@@ -13,6 +13,7 @@
 - Footprint control e harness de teste inicial validados (`target/` ~250MB, zero `.pdb`s descontrolados).
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-AST-007 complete. Gate: 11/11 pass. [REQ-AST-009]
 - 2026-10-29 TASK-AST-006 complete. Gate: 10/10 pass. [REQ-AST-008]
 - 2026-10-29 TASK-AST-005 complete. Gate: 9/9 pass. [REQ-AST-006] [REQ-AST-007]
 - 2026-10-29 TASK-AST-004 complete. Gate: 7/7 pass. [REQ-AST-001] [REQ-AST-002]
@@ -34,5 +35,5 @@
 - [x] TASK-AST-004: Implement Query AST nodes with Copy-on-Write support — Execute phase
 - [x] TASK-AST-005: Implement OperationNodeVisitor and OperationNodeTransformer traits — Execute phase
 - [x] TASK-AST-006: Implement CompiledQuery and DefaultQueryCompiler — Execute phase
-- [ ] TASK-AST-007: Implement PostgresQueryCompiler — Execute phase
+- [x] TASK-AST-007: Implement PostgresQueryCompiler — Execute phase
 - [ ] TASK-AST-008: Comprehensive Integration Tests and Footprint Verification — Execute phase

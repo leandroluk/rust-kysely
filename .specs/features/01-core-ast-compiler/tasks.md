@@ -55,7 +55,7 @@
 - **Done when**: `DefaultQueryCompiler` produces valid ANSI SQL for SELECT, INSERT, UPDATE, DELETE queries with `?` parameters.
 - **Gate**: `cargo test test_default_compiler`
 
-### TASK-AST-007: Implement PostgresQueryCompiler
+### TASK-AST-007: Implement PostgresQueryCompiler [x]
 - **REQ**: REQ-AST-009
 - **Symbols**: `PostgresQueryCompiler`
 - **What**: Implement PostgreSQL query compiler with sequential dollar placeholders (`$1, $2, ...`), double-quoted identifier escaping (`"col"`), and dialect-specific clauses (e.g. `RETURNING`).
