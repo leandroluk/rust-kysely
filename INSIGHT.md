@@ -28,6 +28,17 @@ No `rust-kysely`, **abolimos radicalmente o uso de macros** (`no syn`, `no quote
 - **Autocompletion & IDE Inlay Hints perfeitos**: Toda a API é composta por structs, traits e métodos nativos com tipagem forte.
 - **Controle estrito de footprint**: Configurado com `debug = 0`, `strip = "debuginfo"` e `incremental = false` para evitar o inchaço de gigabytes na pasta `target/` no Windows/MSVC.
 
+### 1.4. Suporte Integral aos 5 Dialetos Oficiais do Kysely
+Embora a implementação comece **intencionalmente com o PostgreSQL** como dialeto de referência e prova de conceito arquitetural, o `rust-kysely` foi desenhado para atingir paridade total com os **5 dialetos oficiais embutidos do Kysely**, ativados via feature gates no `Cargo.toml`:
+
+| Dialeto | Feature Gate | Driver Rust Recomendado | Placeholder de Parâmetros | Sanitização de Identificadores | Características Específicas |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **PostgreSQL** | `postgres` (default) | `tokio-postgres` | `$1, $2, ...` | `"identifier"` | Suporte nativo a `RETURNING`, JSONB (`->`, `@>`), `ON CONFLICT`, advisory locks de migração. |
+| **MySQL** | `mysql` | `mysql_async` | `?` | `` `identifier` `` | Cláusulas `ON DUPLICATE KEY UPDATE`, lock de transação `GET_LOCK()`, sem `RETURNING` padrão (usa `last_insert_id`). |
+| **MS SQL Server (MSSQL)** | `mssql` | `tiberius` | `@p1, @p2, ...` | `[identifier]` | Modificador `TOP(n)`, cláusulas `OUTPUT` em vez de `RETURNING`, `MERGE` statements específicos. |
+| **SQLite** | `sqlite` | `rusqlite` / `tokio-rusqlite` | `?` | `"identifier"` | Suporte a `:memory:`, WAL mode, `RETURNING` (SQLite 3.35+), PRAGMA statements para introspecção. |
+| **PGlite** | `pglite` | `tokio-postgres` / PGlite embed | `$1, $2, ...` | `"identifier"` | Reutiliza 100% de `PostgresQueryCompiler` e `PostgresAdapter`, operando em ambiente embutido/WASM. |
+
 ---
 
 ## 2. Mapeamento de Idiomas: TypeScript vs. Rust Macro-Free
@@ -301,6 +312,10 @@ A tabela abaixo lista detalhadamente cada módulo do upstream do Kysely (`kysely
 | **`operation-node/`** | 80+ nós (`select-query-node`, `where-node`, `join-node`, `binary-operation-node`, etc.) | Representação de dados da AST de SQL | Média-Alta | Enums e structs Rust com `CompactStr`, `SmallVec` e `Arc`. |
 | **`query-compiler/`** | `default-query-compiler.ts`, `compiled-query.ts` | Visitor que traduz a AST para SQL parametrizado | Média | Trait `OperationNodeVisitor` e `DefaultQueryCompiler` base. |
 | **`dialect/postgres/`** | `postgres-query-compiler.ts`, `postgres-adapter.ts`, `postgres-driver.ts`, `postgres-introspector.ts` | Compilador, driver e introspecção PostgreSQL | Média-Alta | Integração com `tokio-postgres`, placeholders `$n`, advisory locks. |
+| **`dialect/mysql/`** | `mysql-query-compiler.ts`, `mysql-adapter.ts`, `mysql-driver.ts`, `mysql-introspector.ts` | Compilador, driver e introspecção MySQL | Média | Placeholders `?`, crases, `ON DUPLICATE KEY UPDATE`, `mysql_async`. |
+| **`dialect/mssql/`** | `mssql-query-compiler.ts`, `mssql-adapter.ts`, `mssql-driver.ts`, `mssql-introspector.ts` | Compilador, driver e introspecção MS SQL Server | Média-Alta | Placeholders `@p1`, colchetes `[col]`, `TOP`, `OUTPUT`, `tiberius`. |
+| **`dialect/sqlite/`** | `sqlite-query-compiler.ts`, `sqlite-adapter.ts`, `sqlite-driver.ts`, `sqlite-introspector.ts` | Compilador, driver e introspecção SQLite | Média | Placeholders `?`, `:memory:`, WAL mode, `rusqlite` / `tokio-rusqlite`. |
+| **`dialect/pglite/`** | `pglite-dialect.ts`, `pglite-driver.ts` | Suporte PGlite (PostgreSQL embutido / WASM) | Baixa | Reutilização de `PostgresQueryCompiler` e `PostgresAdapter` em modo local. |
 | **`expression/`** | `expression-builder.ts`, `expression-wrapper.ts`, `expression.ts` | Construtor de expressões (`eb.or`, `eb.fn`, comparações, subqueries) | Média | `ExpressionBuilder` com métodos de alta ordem e closures `\|eb\|`. |
 | **`raw-builder/`** | `sql.ts`, `raw-builder.ts` | Construção de fragmentos SQL manuais e binds seguros | Baixa-Média | Struct `Sql` fluente com `sql::raw`, `sql::id`, `sql::lit`, `sql::join`. |
 | **`query-builder/select`** | `select-query-builder.ts`, `join-builder.ts`, `case-builder.ts`, `cte-builder.ts` | SELECT queries: joins, wheres, order, group, limit, CTEs | Alta | `SelectQueryBuilder` fluente com suporte a subqueries e merges. |
@@ -461,6 +476,7 @@ db.schema().create_table("pet")
 | **M6: Schema DDL & Introspecção** | `SchemaModule` (`create_table`, `alter_table`, `drop_table`, `create_index`, `create_view`, `create_type`), introspector consultando `pg_catalog`. | 3–4 dias | M1, M5 |
 | **M7: Migrações & Advisory Locks** | `Migrator`, `MigrationProvider`, migração atômica com locks consultando `pg_advisory_lock` e tabela de histórico. | 2–3 dias | M5, M6 |
 | **M8: Sistema de Plugins & Polimento** | `KyselyPlugin`, `CamelCasePlugin`, documentação completa, benchmarks e paridade com testes do upstream. | 2–3 dias | M1 a M7 |
+| **M9: Multi-Dialetos (MySQL, MSSQL, SQLite, PGlite)** | Compiladores, drivers (`mysql_async`, `tiberius`, `rusqlite`), adapters e introspectors para os 4 bancos restantes, com feature gates dedicados. | 4–6 dias | M1 a M8 |
 
 ---
 

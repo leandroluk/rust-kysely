@@ -15,6 +15,10 @@ rust-version = "1.85"
 default = ["std", "postgres"]
 std = []
 postgres = ["dep:tokio-postgres", "dep:tokio"]
+mysql = []
+sqlite = []
+mssql = []
+pglite = ["postgres"]
 json = ["dep:serde_json", "dep:serde"]
 
 [dependencies]

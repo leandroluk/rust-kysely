@@ -64,3 +64,11 @@
 - `KyselyPlugin` trait with `transform_query` and `transform_result`.
 - Built-in plugins: `CamelCasePlugin`, `DeduplicateJoinsPlugin`, `WithSchemaPlugin`.
 - Specs: `REQ-PLUG-001` through `REQ-PLUG-006`.
+
+### [Milestone 9: Multi-Dialect Support (MySQL, MSSQL, SQLite, PGlite)](../features/09-multi-dialect-support/spec.md)
+- Compiladores de query dedicados (`MysqlQueryCompiler`, `MssqlQueryCompiler`, `SqliteQueryCompiler`).
+- Adapters e introspectors específicos por banco.
+- Drivers assíncronos (`mysql_async`, `tiberius`, `rusqlite`).
+- Suporte PGlite integrado.
+- Cargo feature gates independentes (`postgres`, `mysql`, `mssql`, `sqlite`, `pglite`).
+- Specs: `REQ-DIA-001` through `REQ-DIA-007`.
