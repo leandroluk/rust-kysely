@@ -45,7 +45,7 @@
 - **Done when**: `eb.between("age", 18, 65)` and `eb.exists(...)` compile properly.
 - **Gate**: `cargo test test_eb_between test_eb_exists`
 
-### TASK-EXPR-006: Implement FunctionModule (eb.fn / db.fn)
+### TASK-EXPR-006: Implement FunctionModule (eb.fn / db.fn) [x]
 - **REQ**: REQ-EXPR-010
 - **Symbols**: `FunctionModule`, `eb.fn()`, `count`, `count_all`, `max`, `min`, `avg`, `sum`, `coalesce`
 - **What**: Implement `FunctionModule` providing standard SQL functions with `.as_("alias")` support.

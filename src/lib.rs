@@ -13,7 +13,7 @@ pub mod util;
 
 #[cfg(feature = "postgres")]
 pub use dialect::PostgresQueryCompiler;
-pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper};
+pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use operation_node::*;
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,

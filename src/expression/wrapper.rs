@@ -27,6 +27,11 @@ impl<T> ExpressionWrapper<T> {
     pub fn node(&self) -> &Arc<OperationNode> {
         &self.node
     }
+
+    /// Re-interprets the phantom return type `T` as `U`.
+    pub fn cast<U>(self) -> ExpressionWrapper<U> {
+        ExpressionWrapper::new(self.node)
+    }
 }
 
 impl<T> Expression<T> for ExpressionWrapper<T> {

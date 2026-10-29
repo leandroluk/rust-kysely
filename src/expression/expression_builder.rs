@@ -3,6 +3,7 @@
 use std::sync::Arc;
 use compact_str::CompactString;
 
+use crate::expression::function_module::FunctionModule;
 use crate::expression::{Expression, ExpressionWrapper};
 use crate::operation_node::*;
 
@@ -15,6 +16,18 @@ impl ExpressionBuilder {
     /// Creates a new ExpressionBuilder instance.
     pub fn new() -> Self {
         Self
+    }
+
+    /// Accesses SQL standard functions (`count`, `max`, `min`, `avg`, `sum`, `coalesce`).
+    // @spec REQ-EXPR-010
+    pub fn fn_(&self) -> FunctionModule {
+        FunctionModule
+    }
+
+    /// Alias for `fn_()` matching TypeScript Kysely's `eb.fn`.
+    // @spec REQ-EXPR-010
+    pub fn r#fn(&self) -> FunctionModule {
+        FunctionModule
     }
 
     /// Compares a column reference to a scalar value parameter (`col OP val`).
