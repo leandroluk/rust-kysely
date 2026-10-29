@@ -14,6 +14,7 @@ pub mod query_builder;
 pub mod query_compiler;
 pub mod query_executor;
 pub mod raw_builder;
+pub mod schema;
 pub mod transaction;
 pub mod util;
 
@@ -38,6 +39,7 @@ pub use query_executor::{
     Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
+pub use schema::{create_table, ColumnDefinitionBuilder, CreateTableBuilder};
 pub use transaction::{IsolationLevel, Transaction, TransactionBuilder};
 pub use util::QueryId;
 

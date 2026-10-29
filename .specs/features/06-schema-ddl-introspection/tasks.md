@@ -9,7 +9,7 @@
 - **Done when**: All DDL nodes compile into valid ANSI and PostgreSQL SQL with correct quoting and constraints.
 - **Gate**: `cargo test test_ddl_compilation`
 
-### TASK-DDL-002: Implement CreateTableBuilder and ColumnDefinitionBuilder
+### TASK-DDL-002: Implement CreateTableBuilder and ColumnDefinitionBuilder [x]
 - **REQ**: REQ-DDL-002, REQ-DDL-004
 - **Symbols**: `CreateTableBuilder`, `ColumnDefinitionBuilder`, `.add_column()`, `.primary_key()`, `.not_null()`, `.unique()`, `.default_to()`, `.references()`, `.on_delete()`, `.on_update()`, `.check()`
 - **What**: Implement fluent builders for table and column definitions with constraint chaining and foreign key referencing.
