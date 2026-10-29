@@ -491,3 +491,147 @@ fn test_integration_delete_builder_with_using_and_returning() {
     );
     assert_eq!(query.parameters, vec![Value::from(false)]);
 }
+
+#[tokio::test]
+async fn test_integration_kysely_query_execution_full_cycle() {
+    use async_trait::async_trait;
+    use rust_kysely::{
+        CustomDialect, DatabaseConnection, Driver, DriverError, Kysely, QueryResult, Row,
+    };
+    use std::sync::Mutex;
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+    struct OrderRecord {
+        id: i64,
+        customer_name: String,
+        total: f64,
+        notes: Option<String>,
+    }
+
+    struct MockConnection {
+        executed: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait]
+    impl DatabaseConnection for MockConnection {
+        async fn execute_query(&mut self, query: &rust_kysely::CompiledQuery) -> Result<QueryResult, DriverError> {
+            self.executed.lock().unwrap().push(query.sql.clone());
+
+            let rows = vec![
+                Row::new(
+                    vec!["id", "customer_name", "total", "notes"],
+                    vec![
+                        Value::from(101),
+                        Value::from("Acme Corp"),
+                        Value::from(1540.50),
+                        Value::Null,
+                    ],
+                ),
+                Row::new(
+                    vec!["id", "customer_name", "total", "notes"],
+                    vec![
+                        Value::from(102),
+                        Value::from("Globex"),
+                        Value::from(320.00),
+                        Value::from("Urgent delivery"),
+                    ],
+                ),
+            ];
+            Ok(QueryResult::with_rows(rows))
+        }
+    }
+
+    struct MockDriver {
+        executed: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait]
+    impl Driver for MockDriver {
+        async fn acquire_connection(&self) -> Result<Box<dyn DatabaseConnection>, DriverError> {
+            Ok(Box::new(MockConnection {
+                executed: Arc::clone(&self.executed),
+            }))
+        }
+
+        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+            Ok(())
+        }
+
+        async fn destroy(&self) -> Result<(), DriverError> {
+            Ok(())
+        }
+    }
+
+    let executed = Arc::new(Mutex::new(Vec::new()));
+    let driver = Arc::new(MockDriver {
+        executed: Arc::clone(&executed),
+    });
+    let compiler = Arc::new(DefaultQueryCompiler::new());
+    let dialect = CustomDialect::new(driver, compiler);
+    let db = Kysely::new(dialect);
+
+    // 1. SELECT query execution with execute_into
+    let orders: Vec<OrderRecord> = db
+        .select_from("orders as o")
+        .select(["o.id", "o.customer_name", "o.total", "o.notes"])
+        .where_("o.total", ">", 100.0)
+        .order_by("o.id", "asc")
+        .execute_into()
+        .await
+        .expect("Query failed");
+
+    assert_eq!(orders.len(), 2);
+    assert_eq!(orders[0].id, 101);
+    assert_eq!(orders[0].customer_name, "Acme Corp");
+    assert_eq!(orders[0].notes, None);
+    assert_eq!(orders[1].id, 102);
+    assert_eq!(orders[1].notes, Some("Urgent delivery".into()));
+
+    // 2. SELECT execute_take_first
+    let first_row = db
+        .select_from("orders")
+        .select(["id", "total"])
+        .execute_take_first()
+        .await
+        .expect("take_first failed")
+        .expect("row should exist");
+
+    assert_eq!(first_row.get::<i64>("id").unwrap(), 101);
+    assert_eq!(first_row.get::<f64>("total").unwrap(), 1540.50);
+
+    // 3. Transactions with commit and rollback
+    executed.lock().unwrap().clear();
+    let tx_res = db
+        .transaction()
+        .isolation_level(rust_kysely::IsolationLevel::RepeatableRead)
+        .execute(|trx| async move {
+            trx.insert_into("orders")
+                .set("customer_name", "Initech")
+                .set("total", 999.0)
+                .execute()
+                .await?;
+
+            trx.savepoint_block("sp1", |sub| async move {
+                sub.update_table("orders")
+                    .set("total", 1000.0)
+                    .where_("id", "=", 101)
+                    .execute()
+                    .await?;
+                Ok(())
+            })
+            .await?;
+
+            Ok("success")
+        })
+        .await;
+
+    assert_eq!(tx_res.unwrap(), "success");
+
+    let history = executed.lock().unwrap().clone();
+    assert_eq!(history[0], "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    assert!(history[1].starts_with("INSERT INTO"));
+    assert_eq!(history[2], "SAVEPOINT \"sp1\"");
+    assert!(history[3].starts_with("UPDATE"));
+    assert_eq!(history[4], "RELEASE SAVEPOINT \"sp1\"");
+    assert_eq!(history[5], "COMMIT");
+}

@@ -54,7 +54,7 @@
 - **Done when**: `PostgresDriver` compiles and converts parameters to wire format.
 - **Gate**: `cargo test test_postgres_driver_parameter_conversion`
 
-### TASK-DRV-007: Comprehensive integration tests for query execution engine
+### TASK-DRV-007: Comprehensive integration tests for query execution engine [x]
 - **REQ**: REQ-EXEC-001..010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: End-to-end integration tests verifying execution, row extraction, serde deserialization, transactions, and savepoints.
