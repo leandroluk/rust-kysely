@@ -46,7 +46,7 @@
 - **Done when**: Visitor correctly traverses all AST variants with parent stack tracking, and Transformer successfully rewrites target nodes.
 - **Gate**: `cargo test test_visitor test_transformer`
 
-### TASK-AST-006: Implement CompiledQuery and DefaultQueryCompiler
+### TASK-AST-006: Implement CompiledQuery and DefaultQueryCompiler [x]
 - **REQ**: REQ-AST-008
 - **Symbols**: `CompiledQuery`, `QueryCompiler`, `DefaultQueryCompiler`
 - **What**: Implement `CompiledQuery { sql, parameters, query_id }` and the ANSI SQL `DefaultQueryCompiler` with parameter tracking and `?` placeholders.
