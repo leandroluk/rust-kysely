@@ -9,7 +9,7 @@
 - **Done when**: Traits compile with `async_trait` and support acquiring, executing, and releasing connections.
 - **Gate**: `cargo test test_driver_traits`
 
-### TASK-DRV-002: Implement QueryResult, Row, and type-safe value extraction
+### TASK-DRV-002: Implement QueryResult, Row, and type-safe value extraction [x]
 - **REQ**: REQ-EXEC-005, REQ-EXEC-006
 - **Symbols**: `QueryResult`, `Row`, `ColumnError`, `.get()`, `.get_opt()`, `.into_record()`
 - **What**: Implement `Row` holding column-to-Value mappings with typed getters (`get::<i64>`, `get::<String>`, `get::<bool>`, etc.) and serde deserialization.
