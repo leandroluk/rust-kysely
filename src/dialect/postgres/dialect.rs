@@ -2,6 +2,8 @@
 
 use std::sync::Arc;
 
+use crate::dialect::adapter::DialectAdapter;
+use crate::dialect::postgres::adapter::PostgresAdapter;
 use crate::dialect::Dialect;
 use crate::dialect::postgres::driver::PostgresDriver;
 use crate::dialect::postgres::query_compiler::PostgresQueryCompiler;
@@ -34,5 +36,9 @@ impl Dialect for PostgresDialect {
 
     fn create_query_compiler(&self) -> Arc<dyn QueryCompiler> {
         Arc::new(PostgresQueryCompiler::new())
+    }
+
+    fn create_adapter(&self) -> Arc<dyn DialectAdapter> {
+        Arc::new(PostgresAdapter)
     }
 }

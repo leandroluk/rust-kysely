@@ -19,11 +19,11 @@ pub mod schema;
 pub mod transaction;
 pub mod util;
 
-pub use dialect::{CustomDialect, Dialect};
+pub use dialect::{CustomDialect, DefaultAdapter, Dialect, DialectAdapter};
 #[cfg(feature = "postgres")]
 pub use dialect::postgres::{
-    PostgresConnection, PostgresDialect, PostgresDriver, PostgresIntrospector,
-    PostgresQueryCompiler,
+    PostgresAdapter, PostgresConnection, PostgresDialect, PostgresDriver, PostgresIntrospector,
+    PostgresQueryCompiler, KYSELY_MIGRATION_LOCK_ID,
 };
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
