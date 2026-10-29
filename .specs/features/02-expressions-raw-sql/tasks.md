@@ -54,7 +54,7 @@
 - **Done when**: `eb.fn().count("id").as_("total")` compiles to `COUNT("id") AS "total"`.
 - **Gate**: `cargo test test_function_module`
 
-### TASK-EXPR-007: Integration tests for expressions and raw SQL
+### TASK-EXPR-007: Integration tests for expressions and raw SQL [x]
 - **REQ**: REQ-EXPR-001, REQ-EXPR-002, REQ-EXPR-003, REQ-EXPR-004, REQ-EXPR-005, REQ-EXPR-006, REQ-EXPR-007, REQ-EXPR-008, REQ-EXPR-009, REQ-EXPR-010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: End-to-end integration tests verifying expressions, raw SQL building, and closures in `tests/integration.rs`.

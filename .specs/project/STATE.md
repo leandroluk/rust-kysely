@@ -1,20 +1,20 @@
 # Project State
 
 ## Status
-- **Current Milestone**: Milestone 2 (Expressions, ExpressionBuilder & Raw SQL) — Em Execução
-- **Active Feature**: [02-expressions-raw-sql](../features/02-expressions-raw-sql/spec.md)
-- **Current Phase**: Execute
-- **Active Task**: TASK-EXPR-007
+- **Current Milestone**: Milestone 2 (Expressions, ExpressionBuilder & Raw SQL) — Concluída ✓
+- **Active Feature**: [02-expressions-raw-sql](../features/02-expressions-raw-sql/spec.md) (Todas as 7 tarefas finalizadas)
+- **Current Phase**: Milestone 2 Complete (Pronto para Milestone 3: 03-select-query-builder)
+- **Active Task**: None
 - **Blockers**: None
 
 ## Cost
-- Milestone 1 implementada integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 satisfeitos.
-- Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 2 (`TASK-EXPR-001` a `TASK-EXPR-007`).
-- 23 testes de integração e unitários passando em 0.00s.
+- Milestone 1 e Milestone 2 implementadas integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 e REQ-EXPR-001 a REQ-EXPR-010 satisfeitos.
+- 24 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
-- Footprint control validado: `target/` em ~253MB, zero `.pdb`s descontrolados, sem macros procedurais.
+- Footprint control validado: `target/` em ~272MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-EXPR-007 complete. Gate: 24/24 pass. Footprint: 272 MB. [REQ-EXPR-001..010]
 - 2026-10-29 TASK-EXPR-006 complete. Gate: 23/23 pass. [REQ-EXPR-010]
 - 2026-10-29 TASK-EXPR-005 complete. Gate: 22/22 pass. [REQ-EXPR-008] [REQ-EXPR-009]
 - 2026-10-29 TASK-EXPR-004 complete. Gate: 20/20 pass. [REQ-EXPR-006] [REQ-EXPR-007]
@@ -22,6 +22,8 @@
 - 2026-10-29 TASK-EXPR-002 complete. Gate: 17/17 pass. [REQ-EXPR-002]
 - 2026-10-29 TASK-EXPR-001 complete. Gate: 16/16 pass. [REQ-EXPR-001] [REQ-EXPR-002]
 - 2026-10-29 TASK-AST-008 complete. Gate: 15/15 pass. Footprint: 253 MB. [REQ-AST-010]
+- 2026-10-29 TASK-AST-007 complete. Gate: 11/11 pass. [REQ-AST-009]
+- 2026-10-29 TASK-AST-006 complete. Gate: 10/10 pass. [REQ-AST-008]
 - 2026-10-29 TASK-AST-007 complete. Gate: 11/11 pass. [REQ-AST-009]
 - 2026-10-29 TASK-AST-006 complete. Gate: 10/10 pass. [REQ-AST-008]
 - 2026-10-29 TASK-AST-005 complete. Gate: 9/9 pass. [REQ-AST-006] [REQ-AST-007]
@@ -44,4 +46,5 @@
 - [x] TASK-EXPR-004: Implement ExpressionBuilder boolean combinators and comparisons — Execute phase
 - [x] TASK-EXPR-005: Implement eb.between and eb.exists — Execute phase
 - [x] TASK-EXPR-006: Implement FunctionModule (eb.fn / db.fn) — Execute phase
-- [ ] TASK-EXPR-007: Integration tests for expressions and raw SQL — Execute phase
+- [x] TASK-EXPR-007: Integration tests for expressions and raw SQL — Execute phase
+- [ ] Milestone 3: Specify and implement 03-select-query-builder (SelectQueryBuilder, IntoSelections, multi-table joins, subqueries)

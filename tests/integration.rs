@@ -1,7 +1,8 @@
 use rust_kysely::dialect::PostgresQueryCompiler;
+use rust_kysely::expression::Expression;
 use rust_kysely::operation_node::*;
 use rust_kysely::query_compiler::DefaultQueryCompiler;
-use rust_kysely::VERSION;
+use rust_kysely::{sql, ExpressionBuilder, VERSION};
 use std::sync::Arc;
 
 #[test]
@@ -12,15 +13,6 @@ fn test_version_present() {
 #[test]
 fn test_integration_postgres_select_complex() {
     let compiler = PostgresQueryCompiler::new();
-
-    // Query:
-    // WITH "active_users" AS (SELECT "id", "org_id" FROM "users" WHERE "active" = $1)
-    // SELECT "u"."id", "o"."name" AS "org_name"
-    // FROM "active_users" AS "u"
-    // INNER JOIN "organizations" AS "o" ON "o"."id" = "u"."org_id"
-    // WHERE "u"."org_id" > $2
-    // ORDER BY "u"."id" ASC
-    // LIMIT $3 OFFSET $4
 
     let mut cte_query = SelectQueryNode::new();
     cte_query.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
@@ -117,7 +109,6 @@ fn test_integration_postgres_select_complex() {
 fn test_integration_postgres_insert_on_conflict_returning() {
     let compiler = PostgresQueryCompiler::new();
 
-    // INSERT INTO "users" ("email", "name") VALUES ($1, $2) ON CONFLICT ("email") DO UPDATE SET "name" = $3 WHERE "users"."archived" = $4 RETURNING "id", "created_at"
     let mut insert = InsertQueryNode::new();
     insert.into = Some(Arc::new(OperationNode::Table(TableNode::new("users"))));
     insert.columns = Some(smallvec::smallvec![
@@ -181,7 +172,6 @@ fn test_integration_postgres_insert_on_conflict_returning() {
 fn test_integration_postgres_update_and_delete() {
     let compiler = PostgresQueryCompiler::new();
 
-    // UPDATE "accounts" SET "balance" = $1, "updated_at" = NOW() WHERE "id" = $2 RETURNING "balance"
     let mut update = UpdateQueryNode::new();
     update.table = Some(Arc::new(OperationNode::Table(TableNode::new("accounts"))));
     update.updates.push(Arc::new(OperationNode::ColumnUpdate(ColumnUpdateNode::new(
@@ -210,7 +200,6 @@ fn test_integration_postgres_update_and_delete() {
     );
     assert_eq!(update_q.parameters, vec![Value::I64(1500), Value::I64(42)]);
 
-    // DELETE FROM "sessions" WHERE "expires_at" < NOW() RETURNING "id"
     let mut delete = DeleteQueryNode::new();
     delete.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
         OperationNode::Table(TableNode::new("sessions")),
@@ -265,4 +254,77 @@ fn test_integration_default_ansi_compiler() {
         q.parameters,
         vec![Value::from("completed"), Value::from("shipped")]
     );
+}
+
+#[test]
+fn test_integration_eb_and_raw_builder_combined() {
+    let eb = ExpressionBuilder::new();
+    let compiler = PostgresQueryCompiler::new();
+
+    // 1. Combining eb.or, eb.and, eb.cmp, eb.between, and eb.fn_
+    let complex_filter = eb.and([
+        eb.or([
+            eb.cmp("u.status", "=", "active"),
+            eb.cmp("u.role", "=", "admin"),
+        ]),
+        eb.between("u.age", 21, 55),
+        eb.not(eb.cmp("u.deleted", "=", true)),
+    ]);
+
+    let mut select = SelectQueryNode::new();
+    select.selections.push(Arc::new(OperationNode::Selection(SelectionNode::new(
+        Arc::new(OperationNode::Reference(ReferenceNode::with_table("u", "id"))),
+    ))));
+    select.selections.push(
+        eb.fn_().count("o.id").as_("order_count").to_operation_node(),
+    );
+    select.from = Some(Arc::new(OperationNode::From(FromNode::new(Arc::new(
+        OperationNode::Alias(AliasNode::new(
+            Arc::new(OperationNode::Identifier(IdentifierNode::new("users"))),
+            Arc::new(OperationNode::Identifier(IdentifierNode::new("u"))),
+        )),
+    )))));
+    select.where_clause = Some(Arc::new(OperationNode::Where(WhereNode::new(
+        complex_filter.to_operation_node(),
+    ))));
+
+    let compiled = compiler.compile(&OperationNode::SelectQuery(select));
+    assert_eq!(
+        compiled.sql,
+        "SELECT \"u\".\"id\", COUNT(\"o\".\"id\") AS \"order_count\" FROM \"users\" AS \"u\" WHERE ((\"u\".\"status\" = $1 OR \"u\".\"role\" = $2) AND \"u\".\"age\" BETWEEN $3 AND $4 AND NOT (\"u\".\"deleted\" = $5))"
+    );
+    assert_eq!(
+        compiled.parameters,
+        vec![
+            Value::from("active"),
+            Value::from("admin"),
+            Value::I64(21),
+            Value::I64(55),
+            Value::Bool(true),
+        ]
+    );
+
+    // 2. Raw SQL builder with sql::* helpers
+    let raw_query = sql("SELECT ")
+        .append_expr(sql::join(
+            [sql::id("first_name"), sql::id("last_name"), sql::id("email")],
+            ", ",
+        ))
+        .append(" FROM ")
+        .append_expr(sql::table("employees"))
+        .append(" WHERE ")
+        .append_expr(sql::id("salary"))
+        .append(" >= ")
+        .append_expr(sql::lit(75000))
+        .append(" AND ")
+        .append_expr(sql::id("created_at"))
+        .append(" < ")
+        .append_expr(sql::raw("NOW()"));
+
+    let compiled_raw = compiler.compile(&raw_query.to_operation_node());
+    assert_eq!(
+        compiled_raw.sql,
+        "SELECT \"first_name\", \"last_name\", \"email\" FROM \"employees\" WHERE \"salary\" >= $1 AND \"created_at\" < NOW()"
+    );
+    assert_eq!(compiled_raw.parameters, vec![Value::I64(75000)]);
 }
