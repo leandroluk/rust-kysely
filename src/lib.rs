@@ -5,14 +5,17 @@
 #![warn(missing_docs)]
 
 pub mod dialect;
+pub mod driver;
 pub mod expression;
 pub mod operation_node;
 pub mod parser;
 pub mod query_builder;
 pub mod query_compiler;
+pub mod query_executor;
 pub mod raw_builder;
 pub mod util;
 
+pub use driver::{DatabaseConnection, Driver, DriverError};
 #[cfg(feature = "postgres")]
 pub use dialect::PostgresQueryCompiler;
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
@@ -26,6 +29,7 @@ pub use query_builder::{
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
+pub use query_executor::{ColumnError, QueryResult, Row};
 pub use raw_builder::{sql, RawBuilder};
 pub use util::QueryId;
 

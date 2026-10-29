@@ -1,6 +1,6 @@
 # Tasks: 05 — PostgreSQL Driver, Connection Pooling & Execution Engine
 
-### TASK-DRV-001: Implement Driver and DatabaseConnection async traits
+### TASK-DRV-001: Implement Driver and DatabaseConnection async traits [x]
 - **REQ**: REQ-EXEC-001
 - **Symbols**: `Driver`, `DatabaseConnection`, `DriverError`
 - **What**: Implement async core traits for database drivers, connections, and error handling.

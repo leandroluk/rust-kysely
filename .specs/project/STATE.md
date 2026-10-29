@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 5 (PostgreSQL Driver & Query Execution) — Execute Phase
 - **Active Feature**: [05-postgres-driver-execution](../features/05-postgres-driver-execution/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-DRV-001
+- **Active Task**: TASK-DRV-002
 - **Blockers**: None
 
 ## Cost
 - Milestones 1, 2, 3 e 4 implementadas integralmente com 100% dos requisitos REQ-AST-001..010, REQ-EXPR-001..010, REQ-SEL-001..010 e REQ-MUT-001..010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 5 (`TASK-DRV-001` a `TASK-DRV-007`).
-- 43 testes de integração e unitários passando em 0.00s.
+- 44 testes de integração e unitários passando em 0.01s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~352MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-DRV-001 complete. Gate: 44/44 pass. [REQ-EXEC-001]
 - 2026-10-29 Milestone 5 designed: design.md and tasks.md created. [REQ-EXEC-001..010]
 - 2026-10-29 TASK-MUT-007 complete. Gate: 43/43 pass. Milestone 4 100% Complete! [REQ-MUT-001..010]
 - 2026-10-29 TASK-MUT-006 complete. Gate: 40/40 pass. [REQ-MUT-010]
@@ -34,7 +35,7 @@
 5. **Design e Decomposição em Tasks da Milestone 1**: Definida a arquitetura completa do AST em enum `OperationNode`, identificadores zero-alocação com `CompactStr`, otimizações via `SmallVec`, CoW com `Arc::make_mut` e compilador de dois níveis (`DefaultQueryCompiler` ANSI e `PostgresQueryCompiler`).
 
 ## Todos
-- [ ] TASK-DRV-001: Implement Driver and DatabaseConnection async traits — Execute phase
+- [x] TASK-DRV-001: Implement Driver and DatabaseConnection async traits — Execute phase
 - [ ] TASK-DRV-002: Implement QueryResult, Row, and type-safe value extraction — Execute phase
 - [ ] TASK-DRV-003: Implement QueryExecutor and execution coordinating pipeline — Execute phase
 - [ ] TASK-DRV-004: Implement Kysely client struct and builder execution chaining — Execute phase
