@@ -1,19 +1,21 @@
 # Project State
 
 ## Status
-- **Current Milestone**: Milestone 4 (Mutation Query Builders: Insert, Update, Delete) — Design Phase
+- **Current Milestone**: Milestone 4 (Mutation Query Builders: Insert, Update, Delete) — Execute Phase
 - **Active Feature**: [04-mutation-query-builders](../features/04-mutation-query-builders/spec.md)
-- **Current Phase**: Design
-- **Active Task**: None (Milestone 3 complete, proceeding to Milestone 4 design)
+- **Current Phase**: Execute
+- **Active Task**: TASK-MUT-001
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 (`01-core-ast-compiler`), Milestone 2 (`02-expressions-raw-sql`), e Milestone 3 (`03-select-query-builder`) implementadas integralmente com 100% dos requisitos REQ-AST-001..010, REQ-EXPR-001..010 e REQ-SEL-001..010 satisfeitos.
+- Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 4 (`TASK-MUT-001` a `TASK-MUT-007`).
 - 34 testes de integração e unitários passando em 0.00s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~274MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 Milestone 4 designed: design.md and tasks.md created. [REQ-MUT-001..010]
 - 2026-10-29 TASK-SEL-007 complete. Gate: 34/34 pass. Milestone 3 100% Complete! [REQ-SEL-001..010]
 - 2026-10-29 TASK-SEL-006 complete. Gate: 32/32 pass. [REQ-SEL-010]
 - 2026-10-29 TASK-SEL-005 complete. Gate: 31/31 pass. [REQ-SEL-007] [REQ-SEL-008] [REQ-SEL-009]
@@ -33,10 +35,10 @@
 5. **Documentação Integral do `.specs/`**: Especificadas todas as 9 fases do projeto cobrindo desde a AST até DDL, Migrations, Plugins e Multi-Dialetos (`REQ-AST-*` até `REQ-DIA-*`).
 
 ## Todos
-- [x] TASK-SEL-001: Implement IntoSelections trait and tuple projections — Execute phase
-- [x] TASK-SEL-002: Implement IntoTableSource and select_from constructor — Execute phase
-- [x] TASK-SEL-003: Implement join methods and JoinBuilder — Execute phase
-- [x] TASK-SEL-004: Implement filtering methods (where_, where_ref, where_expr, or_where_*) — Execute phase
-- [x] TASK-SEL-005: Implement grouping, having, sorting, and pagination — Execute phase
-- [x] TASK-SEL-006: Implement CTEs (with) and set operations (union, intersect, except) — Execute phase
-- [x] TASK-SEL-007: Comprehensive integration tests for SelectQueryBuilder — Execute phase
+- [ ] TASK-MUT-001: Implement InsertQueryBuilder and chained set method — Execute phase
+- [ ] TASK-MUT-002: Implement values, values_batch, and values_record — Execute phase
+- [ ] TASK-MUT-003: Implement OnConflictBuilder and PostgreSQL upsert — Execute phase
+- [ ] TASK-MUT-004: Implement UpdateQueryBuilder with joins and filters — Execute phase
+- [ ] TASK-MUT-005: Implement DeleteQueryBuilder with using joins and filters — Execute phase
+- [ ] TASK-MUT-006: Implement returning and returning_all on all mutation builders — Execute phase
+- [ ] TASK-MUT-007: Comprehensive integration tests for DML builders — Execute phase
