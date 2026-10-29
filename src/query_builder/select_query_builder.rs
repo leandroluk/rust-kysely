@@ -59,6 +59,18 @@ impl SelectQueryBuilder {
         self
     }
 
+    /// Attaches an additional per-query plugin to this query builder.
+    // @spec REQ-PLUG-006
+    pub fn with_plugin<P: crate::plugin::KyselyPlugin + 'static>(mut self, plugin: P) -> Self {
+        if let Some(exec) = self.executor.take() {
+            self.executor = Some(Arc::new(crate::query_executor::PluginExecutor::new(
+                exec,
+                Arc::new(plugin),
+            )));
+        }
+        self
+    }
+
     /// Returns a reference to the executor if attached.
     pub fn executor(&self) -> Option<&Arc<dyn QueryExecutor>> {
         self.executor.as_ref()

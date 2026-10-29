@@ -53,8 +53,8 @@ pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
 pub use query_executor::{
-    ColumnError, DefaultQueryExecutor, FromRowValue, QueryExecutor, QueryExecutorExt, QueryResult,
-    Row, SingleConnectionExecutor,
+    ColumnError, DefaultQueryExecutor, FromRowValue, PluginExecutor, QueryExecutor, QueryExecutorExt,
+    QueryResult, Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
 pub use schema::{

@@ -161,6 +161,35 @@ impl QueryExecutor for DefaultQueryExecutor {
     }
 }
 
+/// Wrapping query executor that applies an extra per-query plugin around an existing executor.
+// @spec REQ-PLUG-006
+pub struct PluginExecutor {
+    inner: Arc<dyn QueryExecutor>,
+    plugin: Arc<dyn KyselyPlugin>,
+}
+
+impl PluginExecutor {
+    /// Creates a new `PluginExecutor` wrapping an existing executor with a plugin.
+    pub fn new(inner: Arc<dyn QueryExecutor>, plugin: Arc<dyn KyselyPlugin>) -> Self {
+        Self { inner, plugin }
+    }
+}
+
+#[async_trait]
+impl QueryExecutor for PluginExecutor {
+    async fn execute_node(&self, node: &OperationNode) -> Result<QueryResult, DriverError> {
+        let query_id = QueryId::generate();
+        let transformed = self.plugin.transform_query(Arc::new(node.clone()), query_id);
+        let res = self.inner.execute_node(&transformed).await?;
+        self.plugin.transform_result(res, query_id).await
+    }
+
+    async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+        let res = self.inner.execute_query(query).await?;
+        self.plugin.transform_result(res, query.query_id).await
+    }
+}
+
 /// Query executor bound to a single active database connection (used during transactions).
 // @spec REQ-EXEC-009, REQ-PLUG-001
 pub struct SingleConnectionExecutor {

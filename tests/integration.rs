@@ -960,3 +960,107 @@ async fn test_integration_migrator_full_lifecycle() {
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[tokio::test]
+async fn test_integration_plugin_suite_combined() {
+    use rust_kysely::dialect::CustomDialect;
+    use rust_kysely::driver::{DatabaseConnection, Driver, DriverError};
+    use rust_kysely::kysely::Kysely;
+    use rust_kysely::plugin::{CamelCasePlugin, DeduplicateJoinsPlugin, WithSchemaPlugin};
+    use rust_kysely::query_compiler::{CompiledQuery, DefaultQueryCompiler};
+    use rust_kysely::query_executor::{QueryResult, Row};
+    use std::sync::Mutex;
+
+    struct PluginRecordingConn {
+        queries: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait::async_trait]
+    impl DatabaseConnection for PluginRecordingConn {
+        async fn execute_query(&mut self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
+            self.queries.lock().unwrap().push(query.sql.clone());
+
+            let row = Row::new(
+                ["account_id", "user_full_name", "total_orders_count"],
+                [
+                    Value::I64(999),
+                    Value::Text("John Doe".into()),
+                    Value::I64(15),
+                ],
+            );
+            Ok(QueryResult::with_rows(vec![row]))
+        }
+    }
+
+    struct PluginRecordingDriver {
+        queries: Arc<Mutex<Vec<String>>>,
+    }
+
+    #[async_trait::async_trait]
+    impl Driver for PluginRecordingDriver {
+        async fn acquire_connection(&self) -> Result<Box<dyn DatabaseConnection>, DriverError> {
+            Ok(Box::new(PluginRecordingConn {
+                queries: Arc::clone(&self.queries),
+            }))
+        }
+
+        async fn release_connection(&self, _connection: Box<dyn DatabaseConnection>) -> Result<(), DriverError> {
+            Ok(())
+        }
+
+        async fn destroy(&self) -> Result<(), DriverError> {
+            Ok(())
+        }
+    }
+
+    let recorded = Arc::new(Mutex::new(Vec::new()));
+    let driver = Arc::new(PluginRecordingDriver {
+        queries: Arc::clone(&recorded),
+    });
+    let compiler = Arc::new(DefaultQueryCompiler::new());
+    let dialect = CustomDialect::new(driver, compiler);
+
+    // Register WithSchemaPlugin and CamelCasePlugin globally on Kysely
+    let db = Kysely::new(dialect)
+        .with_plugin(WithSchemaPlugin::new("enterprise_app"))
+        .with_plugin(CamelCasePlugin::new());
+
+    // Execute query chaining per-query DeduplicateJoinsPlugin
+    let result = db
+        .select_from("accounts")
+        .select(["accountId", "userFullName", "totalOrdersCount"])
+        .inner_join("profiles", |j| j.on("profiles.account_id", "=", "accounts.id"))
+        .inner_join("profiles", |j| j.on("profiles.account_id", "=", "accounts.id"))
+        .with_plugin(DeduplicateJoinsPlugin::new())
+        .execute()
+        .await
+        .unwrap();
+
+    let history = recorded.lock().unwrap();
+    assert_eq!(history.len(), 1);
+    let sql = &history[0];
+
+    // 1. WithSchemaPlugin verified
+    assert!(sql.contains("\"enterprise_app\".\"accounts\""), "Should have schema qualified table: {sql}");
+    assert!(sql.contains("\"enterprise_app\".\"profiles\""), "Should have schema qualified join table: {sql}");
+
+    // 2. DeduplicateJoinsPlugin verified (only 1 JOIN clause despite being added twice)
+    let join_count = sql.matches("JOIN").count();
+    assert_eq!(join_count, 1, "Duplicate join must be deduplicated: {sql}");
+
+    // 3. CamelCasePlugin AST transformation verified (compiled with snake_case columns)
+    assert!(sql.contains("\"account_id\""), "Should have snake_case account_id: {sql}");
+    assert!(sql.contains("\"user_full_name\""), "Should have snake_case user_full_name: {sql}");
+    assert!(sql.contains("\"total_orders_count\""), "Should have snake_case total_orders_count: {sql}");
+
+    // 4. CamelCasePlugin Result transformation verified (result keys mapped back to camelCase)
+    assert_eq!(result.rows.len(), 1);
+    let row = &result.rows[0];
+    let account_id: i64 = row.get("accountId").unwrap();
+    let name: String = row.get("userFullName").unwrap();
+    let count: i64 = row.get("totalOrdersCount").unwrap();
+
+    assert_eq!(account_id, 999);
+    assert_eq!(name, "John Doe");
+    assert_eq!(count, 15);
+}
