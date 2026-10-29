@@ -228,7 +228,7 @@ impl DeleteQueryBuilder {
 
     /// Adds a `WHERE col OP val` filter to the DELETE query.
     ///
-    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
+    /// Alias for `r#where` and [`filter`](Self::filter).
     // @spec REQ-MUT-009
     pub fn where_(
         self,

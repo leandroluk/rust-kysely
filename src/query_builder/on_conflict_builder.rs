@@ -101,7 +101,7 @@ impl OnConflictBuilder {
 
     /// Adds a `WHERE col OP val` filter to the conflict update clause.
     ///
-    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
+    /// Alias for `r#where` and [`filter`](Self::filter).
     pub fn where_(
         self,
         col: impl Into<CompactString>,

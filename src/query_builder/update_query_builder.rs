@@ -275,7 +275,7 @@ impl UpdateQueryBuilder {
 
     /// Adds a `WHERE col OP val` filter to the UPDATE query.
     ///
-    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
+    /// Alias for `r#where` and [`filter`](Self::filter).
     // @spec REQ-MUT-008
     pub fn where_(
         self,

@@ -303,7 +303,7 @@ impl SelectQueryBuilder {
 
     /// Adds a `WHERE col OP val` filter condition to the query.
     ///
-    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
+    /// Alias for `r#where` and [`filter`](Self::filter).
     // @spec REQ-SEL-004
     pub fn where_(
         self,

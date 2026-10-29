@@ -78,7 +78,7 @@ impl CreateIndexBuilder {
 
     /// Specifies a partial index `WHERE` filter.
     ///
-    /// Alias for [`r#where`](Self::r#where) and [`filter`](Self::filter).
+    /// Alias for `r#where` and [`filter`](Self::filter).
     // @spec REQ-DDL-007
     #[inline]
     pub fn where_(self, expr: impl Expression) -> Self {
