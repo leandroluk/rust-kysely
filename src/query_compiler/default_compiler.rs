@@ -73,6 +73,9 @@ impl DefaultQueryCompiler {
 
     /// Formats an identifier according to the configured quoting style.
     pub fn format_identifier(&self, name: &str) -> String {
+        if name == "*" {
+            return "*".to_string();
+        }
         match self.identifier_quote {
             IdentifierQuote::None => name.to_string(),
             IdentifierQuote::DoubleQuote => format!("\"{}\"", name.replace('"', "\"\"")),

@@ -27,7 +27,7 @@
 - **Done when**: Direct joins and closure joins produce the expected `JoinNode`s in the AST.
 - **Gate**: `cargo test test_select_joins`
 
-### TASK-SEL-004: Implement filtering methods (where_, where_ref, where_expr, or_where_*)
+### TASK-SEL-004: Implement filtering methods (where_, where_ref, where_expr, or_where_*) [x]
 - **REQ**: REQ-SEL-004
 - **Symbols**: `where_`, `where_ref`, `where_expr`, `or_where_`, `or_where_ref`, `or_where_expr`
 - **What**: Implement filtering methods with `AND` and `OR` conjunctions, supporting values, column references, and `|eb| ...` closures.
