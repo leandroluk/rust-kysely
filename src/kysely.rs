@@ -4,19 +4,22 @@ use std::sync::Arc;
 use compact_str::CompactString;
 
 use crate::dialect::Dialect;
-use crate::driver::DriverError;
+use crate::driver::{Driver, DriverError};
 use crate::parser::IntoTableSource;
 use crate::query_builder::{
-    delete_from, insert_into, select_from, DeleteQueryBuilder, InsertQueryBuilder,
-    SelectQueryBuilder, UpdateQueryBuilder, update_table,
+    delete_from, insert_into, select_from, update_table, DeleteQueryBuilder, InsertQueryBuilder,
+    SelectQueryBuilder, UpdateQueryBuilder,
 };
-use crate::query_compiler::CompiledQuery;
+use crate::query_compiler::{CompiledQuery, QueryCompiler};
 use crate::query_executor::{DefaultQueryExecutor, QueryExecutor, QueryResult};
+use crate::transaction::TransactionBuilder;
 
 /// Main Kysely database client orchestrating query building and execution.
 // @spec REQ-EXEC-003, REQ-EXEC-004
 #[derive(Clone)]
 pub struct Kysely {
+    driver: Arc<dyn Driver>,
+    compiler: Arc<dyn QueryCompiler>,
     executor: Arc<dyn QueryExecutor>,
 }
 
@@ -25,18 +28,52 @@ impl Kysely {
     pub fn new<D: Dialect>(dialect: D) -> Self {
         let driver = dialect.create_driver();
         let compiler = dialect.create_query_compiler();
-        let executor = Arc::new(DefaultQueryExecutor::new(driver, compiler));
-        Self { executor }
+        let executor = Arc::new(DefaultQueryExecutor::new(
+            Arc::clone(&driver),
+            Arc::clone(&compiler),
+        ));
+        Self {
+            driver,
+            compiler,
+            executor,
+        }
     }
 
-    /// Creates a new `Kysely` instance wrapping an explicit query executor.
-    pub fn with_executor(executor: Arc<dyn QueryExecutor>) -> Self {
-        Self { executor }
+    /// Creates a new `Kysely` instance from explicit driver and compiler instances.
+    pub fn from_driver_and_compiler(
+        driver: Arc<dyn Driver>,
+        compiler: Arc<dyn QueryCompiler>,
+    ) -> Self {
+        let executor = Arc::new(DefaultQueryExecutor::new(
+            Arc::clone(&driver),
+            Arc::clone(&compiler),
+        ));
+        Self {
+            driver,
+            compiler,
+            executor,
+        }
     }
 
     /// Returns a reference to the active query executor.
     pub fn executor(&self) -> &Arc<dyn QueryExecutor> {
         &self.executor
+    }
+
+    /// Returns a reference to the underlying driver.
+    pub fn driver(&self) -> &Arc<dyn Driver> {
+        &self.driver
+    }
+
+    /// Returns a reference to the active query compiler.
+    pub fn compiler(&self) -> &Arc<dyn QueryCompiler> {
+        &self.compiler
+    }
+
+    /// Creates a transaction builder to configure and execute an atomic transaction.
+    // @spec REQ-EXEC-009
+    pub fn transaction(&self) -> TransactionBuilder {
+        TransactionBuilder::new(Arc::clone(&self.driver), Arc::clone(&self.compiler))
     }
 
     /// Starts building a SELECT query with a FROM table source.

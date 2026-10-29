@@ -14,6 +14,7 @@ pub mod query_builder;
 pub mod query_compiler;
 pub mod query_executor;
 pub mod raw_builder;
+pub mod transaction;
 pub mod util;
 
 pub use dialect::{CustomDialect, Dialect};
@@ -37,6 +38,7 @@ pub use query_executor::{
     Row, SingleConnectionExecutor,
 };
 pub use raw_builder::{sql, RawBuilder};
+pub use transaction::{IsolationLevel, Transaction, TransactionBuilder};
 pub use util::QueryId;
 
 /// Namespace containing raw SQL helper functions (`sql::raw`, `sql::id`, `sql::table`, `sql::lit`, `sql::join`).

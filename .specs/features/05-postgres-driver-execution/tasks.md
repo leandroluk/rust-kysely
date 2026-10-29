@@ -36,7 +36,7 @@
 - **Done when**: Builders can execute directly via `.execute().await` and `.execute_into::<T>().await`.
 - **Gate**: `cargo test test_kysely_builder_execution`
 
-### TASK-DRV-005: Implement Transaction and Savepoint management
+### TASK-DRV-005: Implement Transaction and Savepoint management [x]
 - **REQ**: REQ-EXEC-009, REQ-EXEC-010
 - **Symbols**: `Transaction`, `db.transaction().execute()`, `.savepoint()`, `.rollback_to_savepoint()`
 - **What**: Implement atomic transaction wrapper committing on `Ok` and rolling back on `Err`, with named savepoints.

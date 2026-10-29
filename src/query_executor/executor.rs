@@ -110,14 +110,14 @@ impl QueryExecutor for DefaultQueryExecutor {
 /// Query executor bound to a single active database connection (used during transactions).
 // @spec REQ-EXEC-009
 pub struct SingleConnectionExecutor {
-    connection: Arc<tokio::sync::Mutex<Box<dyn DatabaseConnection>>>,
+    connection: Arc<tokio::sync::Mutex<Option<Box<dyn DatabaseConnection>>>>,
     compiler: Arc<dyn QueryCompiler>,
 }
 
 impl SingleConnectionExecutor {
     /// Creates a new executor bound to a single connection.
     pub fn new(
-        connection: Arc<tokio::sync::Mutex<Box<dyn DatabaseConnection>>>,
+        connection: Arc<tokio::sync::Mutex<Option<Box<dyn DatabaseConnection>>>>,
         compiler: Arc<dyn QueryCompiler>,
     ) -> Self {
         Self {
@@ -140,7 +140,10 @@ impl QueryExecutor for SingleConnectionExecutor {
     }
 
     async fn execute_query(&self, query: &CompiledQuery) -> Result<QueryResult, DriverError> {
-        let mut conn = self.connection.lock().await;
+        let mut lock = self.connection.lock().await;
+        let conn = lock.as_mut().ok_or_else(|| {
+            DriverError::ExecutionFailed("Database connection has already been released".into())
+        })?;
         conn.execute_query(query).await
     }
 }
@@ -233,9 +236,9 @@ mod tests {
         assert!(matches!(throw_err, Err(DriverError::ExecutionFailed(_))));
 
         // SingleConnectionExecutor test
-        let single_conn = Arc::new(tokio::sync::Mutex::new(Box::new(MockConnection {
+        let single_conn = Arc::new(tokio::sync::Mutex::new(Some(Box::new(MockConnection {
             return_rows: rows,
-        }) as Box<dyn DatabaseConnection>));
+        }) as Box<dyn DatabaseConnection>)));
         let single_exec = SingleConnectionExecutor::new(single_conn, Arc::new(DefaultQueryCompiler::new()));
         let single_res = single_exec.execute_query(&query).await.unwrap();
         assert_eq!(single_res.len(), 2);
