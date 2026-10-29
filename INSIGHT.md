@@ -80,34 +80,58 @@ Funções auxiliares do namespace `sql::*`:
 - `sql::table(name)`: Trata como nome de tabela.
 - `sql::join(items, separator)`: Junta uma lista de expressões com delimitador.
 
-### 2.3. Objeto de Valores no INSERT/UPDATE $\to$ Tuplas, Builders e Serde
+### 2.3. Objeto de Valores no INSERT/UPDATE $\to$ Zero `.into()` via Traits e Closures
 No TypeScript:
 ```ts
 // TypeScript Kysely
 db.insertInto('person').values({ first_name: 'John', age: 30 })
 ```
-No Rust, suportamos três abordagens sem macros:
-1. **Pares Chave-Valor (Zero Boilerplate)**:
+
+#### Por que um array literal exigiria `.into()` e como evitamos isso?
+No Rust, arrays literais `[a, b]` são tipos homogêneos `[T; N]`. Se tentássemos passar `[("first_name", "John"), ("age", 30)]`, o compilador rejeitaria porque o primeiro elemento é `(&str, &str)` e o segundo é `(&str, i32)`.
+
+Para que o desenvolvedor **nunca precise escrever `.into()` em cada campo**, o `rust-kysely` adota três padrões ergonômicos e tipados via trait `IntoValue`:
+
+1. **Encadeamento Fluente Direto (`.set(col, val)`) — Zero Boilerplate**:
+   Cada chamada a `.set()` é monomorfizada independentemente para o tipo real do valor (`val: impl IntoValue`), sem nenhuma necessidade de `.into()`:
    ```rust
    db.insert_into("person")
-     .values([("first_name", "John".into()), ("age", 30.into())])
+     .set("first_name", "John") // &str implementa IntoValue
+     .set("age", 30)            // i32 implementa IntoValue
+     .set("active", true)       // bool implementa IntoValue
+     .returning_all()
+     .execute()
+     .await?;
    ```
-2. **Closure Builder Fluente**:
+
+2. **Closure Builder (`.values(|v| ...)`) — Agrupamento e Batch Inserts**:
+   Perfeito para manter a semântica de objeto de valores e para inserções em lote (*batch*):
    ```rust
+   // Inserção de uma linha:
    db.insert_into("person")
-     .values_builder(|v| {
+     .values(|v| {
          v.set("first_name", "John")
           .set("age", 30)
+          .set("email", "john@example.com")
      })
+
+   // Inserção em lote (batch insert):
+   db.insert_into("person")
+     .values_batch([
+         |v: &mut RowValues| v.set("name", "Alice").set("age", 25),
+         |v: &mut RowValues| v.set("name", "Bob").set("age", 30),
+     ])
    ```
+
 3. **Mapeamento Direto de Structs via Serde**:
+   Quando os dados já residem em structs de domínio, passam-se diretamente sem nenhuma conversão manual:
    ```rust
    #[derive(serde::Serialize)] // Standard serde, sem macro customizada do Kysely
    struct NewPerson {
        first_name: &'static str,
        age: i32,
    }
-   db.insert_into("person").values_record(&NewPerson { first_name: "John", age: 30 })
+   db.insert_into("person").values(&NewPerson { first_name: "John", age: 30 })
    ```
 
 ### 2.4. Inferência de Linhas e Resultados (`Row` e Deserialização)
@@ -324,11 +348,11 @@ const inserted = await db
 ```rust
 let inserted = db
     .insert_into("person")
-    .values([
-        ("id", 1.into()),
-        ("name", "Alice".into()),
-        ("visits", 1.into()),
-    ])
+    .values(|v| {
+        v.set("id", 1)
+         .set("name", "Alice")
+         .set("visits", 1)
+    })
     .on_conflict(|oc| oc
         .column("id")
         .do_update_set(|eb| {
