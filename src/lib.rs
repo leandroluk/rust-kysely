@@ -39,6 +39,8 @@ pub use dialect::mysql::{
 pub use dialect::mssql::{
     MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler, MSSQL_MIGRATION_LOCK_NAME,
 };
+#[cfg(feature = "pglite")]
+pub use dialect::pglite::PGliteDialect;
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use introspection::{

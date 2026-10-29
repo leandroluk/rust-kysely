@@ -85,3 +85,9 @@ pub mod mssql;
 
 #[cfg(feature = "mssql")]
 pub use mssql::{MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler};
+
+#[cfg(feature = "pglite")]
+pub mod pglite;
+
+#[cfg(feature = "pglite")]
+pub use pglite::PGliteDialect;
