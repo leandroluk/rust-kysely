@@ -11,6 +11,7 @@ use crate::query_builder::{
 };
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 use crate::query_executor::{QueryExecutor, QueryResult, SingleConnectionExecutor};
+use crate::schema::SchemaModule;
 use crate::util::QueryId;
 
 /// SQL transaction isolation level.
@@ -128,6 +129,12 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Returns the schema module for executing DDL operations inside this transaction.
+    // @spec REQ-DDL-001
+    pub fn schema(&self) -> SchemaModule {
+        SchemaModule::new(Arc::clone(&self.executor) as Arc<dyn QueryExecutor>)
+    }
+
     /// Starts building a SELECT query with a FROM table source inside this transaction.
     pub fn select_from(&self, table: impl IntoTableSource) -> SelectQueryBuilder {
         select_from(table).with_executor(Arc::clone(&self.executor) as Arc<dyn crate::query_executor::QueryExecutor>)

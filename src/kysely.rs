@@ -12,6 +12,7 @@ use crate::query_builder::{
 };
 use crate::query_compiler::{CompiledQuery, QueryCompiler};
 use crate::query_executor::{DefaultQueryExecutor, QueryExecutor, QueryResult};
+use crate::schema::SchemaModule;
 use crate::transaction::TransactionBuilder;
 
 /// Main Kysely database client orchestrating query building and execution.
@@ -74,6 +75,12 @@ impl Kysely {
     // @spec REQ-EXEC-009
     pub fn transaction(&self) -> TransactionBuilder {
         TransactionBuilder::new(Arc::clone(&self.driver), Arc::clone(&self.compiler))
+    }
+
+    /// Returns the schema module for executing DDL operations.
+    // @spec REQ-DDL-001
+    pub fn schema(&self) -> SchemaModule {
+        SchemaModule::new(Arc::clone(&self.executor))
     }
 
     /// Starts building a SELECT query with a FROM table source.

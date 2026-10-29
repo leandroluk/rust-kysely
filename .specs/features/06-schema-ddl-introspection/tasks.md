@@ -45,7 +45,7 @@
 - **Done when**: Index, view, and custom enum DDL compile accurately.
 - **Gate**: `cargo test test_index_view_and_type_builders`
 
-### TASK-DDL-006: Implement SchemaModule accessible via db.schema()
+### TASK-DDL-006: Implement SchemaModule accessible via db.schema() [x]
 - **REQ**: REQ-DDL-001
 - **Symbols**: `SchemaModule`, `db.schema()`, `.create_table()`, `.alter_table()`, `.drop_table()`, `.create_index()`, `.drop_index()`, `.create_view()`, `.drop_view()`, `.create_type()`, `.drop_type()`
 - **What**: Implement `SchemaModule` attached to `Kysely`, allowing all DDL builders to execute directly via `.execute().await`.

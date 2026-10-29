@@ -43,7 +43,7 @@ pub use schema::{
     alter_table, create_index, create_table, create_type, create_view, drop_index, drop_table,
     drop_type, drop_view, AlterTableBuilder, ColumnDefinitionBuilder, CreateIndexBuilder,
     CreateTableBuilder, CreateTypeBuilder, CreateViewBuilder, DropIndexBuilder, DropTableBuilder,
-    DropTypeBuilder, DropViewBuilder, ForeignKeyConstraintBuilder,
+    DropTypeBuilder, DropViewBuilder, ForeignKeyConstraintBuilder, SchemaModule,
 };
 pub use transaction::{IsolationLevel, Transaction, TransactionBuilder};
 pub use util::QueryId;
