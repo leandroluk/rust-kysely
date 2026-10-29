@@ -13,7 +13,7 @@ rust-version = "1.85"
 
 [features]
 default = ["std", "postgres", "json"]
-std = []
+std = ["dep:tokio"]
 postgres = ["dep:tokio-postgres", "dep:tokio"]
 mysql = []
 sqlite = []

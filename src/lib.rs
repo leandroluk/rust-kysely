@@ -29,7 +29,10 @@ pub use query_builder::{
 pub use query_compiler::{
     CompiledQuery, DefaultQueryCompiler, IdentifierQuote, ParameterStyle, QueryCompiler,
 };
-pub use query_executor::{ColumnError, FromRowValue, QueryResult, Row};
+pub use query_executor::{
+    ColumnError, DefaultQueryExecutor, FromRowValue, QueryExecutor, QueryResult, Row,
+    SingleConnectionExecutor,
+};
 pub use raw_builder::{sql, RawBuilder};
 pub use util::QueryId;
 

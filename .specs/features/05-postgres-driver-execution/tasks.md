@@ -18,7 +18,7 @@
 - **Done when**: Row lookups succeed for valid types and return clear error messages on type/column mismatch.
 - **Gate**: `cargo test test_row_extraction`
 
-### TASK-DRV-003: Implement QueryExecutor and execution coordinating pipeline
+### TASK-DRV-003: Implement QueryExecutor and execution coordinating pipeline [x]
 - **REQ**: REQ-EXEC-004, REQ-EXEC-007, REQ-EXEC-008
 - **Symbols**: `QueryExecutor`, `DefaultQueryExecutor`, `execute_take_first`, `execute_take_first_val`
 - **What**: Implement executor compiling queries, acquiring driver connections, executing, transforming results, and extracting first items.

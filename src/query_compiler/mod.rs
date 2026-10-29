@@ -10,7 +10,7 @@ use crate::operation_node::OperationNode;
 
 /// General trait for compiling an `OperationNode` AST into a `CompiledQuery`.
 // @spec REQ-AST-008
-pub trait QueryCompiler {
+pub trait QueryCompiler: Send + Sync {
     /// Compiles an AST node into a database-ready query with parameters.
     fn compile(&self, node: &OperationNode) -> CompiledQuery;
 }
