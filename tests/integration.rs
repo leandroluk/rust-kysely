@@ -2,7 +2,10 @@ use rust_kysely::dialect::PostgresQueryCompiler;
 use rust_kysely::expression::Expression;
 use rust_kysely::operation_node::*;
 use rust_kysely::query_compiler::DefaultQueryCompiler;
-use rust_kysely::{select_from, sql, ExpressionBuilder, OrderNulls, VERSION};
+use rust_kysely::{
+    delete_from, insert_into, select_from, update_table, sql, ExpressionBuilder, OrderNulls,
+    VERSION,
+};
 use std::sync::Arc;
 
 #[test]
@@ -404,4 +407,87 @@ fn test_integration_select_builder_set_operations() {
             Value::from(false),
         ]
     );
+}
+
+#[test]
+fn test_integration_insert_builder_with_upsert_and_returning() {
+    let compiler = PostgresQueryCompiler::new();
+
+    let query = insert_into("users")
+        .set("id", 100)
+        .set("name", "Alice")
+        .set("email", "alice@corp.com")
+        .set("active", true)
+        .on_conflict(|oc| {
+            oc.column("id")
+              .do_update_set(|ub| {
+                  ub.set_ref("name", "excluded.name")
+                    .set_ref("email", "excluded.email")
+                    .set("updated_at", "NOW()")
+                    .where_("users.active", "=", true)
+              })
+        })
+        .returning(["id", "name", "email"])
+        .compile(&compiler);
+
+    assert_eq!(
+        query.sql,
+        "INSERT INTO \"users\" (\"id\", \"name\", \"email\", \"active\") VALUES ($1, $2, $3, $4) ON CONFLICT (\"id\") DO UPDATE SET \"name\" = \"excluded\".\"name\", \"email\" = \"excluded\".\"email\", \"updated_at\" = $5 WHERE \"users\".\"active\" = $6 RETURNING \"id\", \"name\", \"email\""
+    );
+    assert_eq!(
+        query.parameters,
+        vec![
+            Value::from(100),
+            Value::from("Alice"),
+            Value::from("alice@corp.com"),
+            Value::from(true),
+            Value::from("NOW()"),
+            Value::from(true),
+        ]
+    );
+}
+
+#[test]
+fn test_integration_update_builder_with_from_joins_and_returning() {
+    let compiler = PostgresQueryCompiler::new();
+
+    let query = update_table("employees as e")
+        .set("salary", 95000)
+        .set_ref("department_name", "d.name")
+        .from("departments as d")
+        .inner_join_ref("companies as c", "c.id", "d.company_id")
+        .where_ref("e.department_id", "=", "d.id")
+        .where_("c.name", "=", "Acme Corp")
+        .returning(["e.id", "e.salary"])
+        .compile(&compiler);
+
+    assert_eq!(
+        query.sql,
+        "UPDATE \"employees\" AS \"e\" SET \"salary\" = $1, \"department_name\" = \"d\".\"name\" FROM \"departments\" AS \"d\" INNER JOIN \"companies\" AS \"c\" ON \"c\".\"id\" = \"d\".\"company_id\" WHERE \"e\".\"department_id\" = \"d\".\"id\" AND \"c\".\"name\" = $2 RETURNING \"e\".\"id\", \"e\".\"salary\""
+    );
+    assert_eq!(
+        query.parameters,
+        vec![
+            Value::from(95000),
+            Value::from("Acme Corp"),
+        ]
+    );
+}
+
+#[test]
+fn test_integration_delete_builder_with_using_and_returning() {
+    let compiler = PostgresQueryCompiler::new();
+
+    let query = delete_from("sessions as s")
+        .using("users as u")
+        .where_ref("s.user_id", "=", "u.id")
+        .where_("u.active", "=", false)
+        .returning_all()
+        .compile(&compiler);
+
+    assert_eq!(
+        query.sql,
+        "DELETE FROM \"sessions\" AS \"s\" USING \"users\" AS \"u\" WHERE \"s\".\"user_id\" = \"u\".\"id\" AND \"u\".\"active\" = $1 RETURNING *"
+    );
+    assert_eq!(query.parameters, vec![Value::from(false)]);
 }

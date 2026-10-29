@@ -54,7 +54,7 @@
 - **Done when**: All three mutation builders append valid RETURNING clauses to their compiled SQL.
 - **Gate**: `cargo test test_mutation_returning`
 
-### TASK-MUT-007: Comprehensive integration tests for DML builders
+### TASK-MUT-007: Comprehensive integration tests for DML builders [x]
 - **REQ**: REQ-MUT-001, REQ-MUT-002, REQ-MUT-003, REQ-MUT-004, REQ-MUT-005, REQ-MUT-006, REQ-MUT-007, REQ-MUT-008, REQ-MUT-009, REQ-MUT-010
 - **Symbols**: Public exports in `src/lib.rs`
 - **What**: End-to-end integration tests compiling realistic INSERT, UPDATE, DELETE queries with PostgresQueryCompiler and verifying zero warnings.
