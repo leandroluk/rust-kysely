@@ -9,7 +9,7 @@ readme = "README.md"
 repository = "https://github.com/leandroluk/rust-kysely"
 keywords = ["kysely", "sql", "query-builder", "postgres", "database"]
 categories = ["database", "asynchronous"]
-rust-version = "1.85"
+rust-version = "1.88"
 
 [features]
 default = ["std", "postgres", "json", "sqlite", "mysql", "mssql", "pglite"]
