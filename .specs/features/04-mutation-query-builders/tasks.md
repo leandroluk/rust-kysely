@@ -27,7 +27,7 @@
 - **Done when**: Upsert queries compile accurately with `ON CONFLICT (cols) DO UPDATE SET col = excluded.col`.
 - **Gate**: `cargo test test_insert_on_conflict`
 
-### TASK-MUT-004: Implement UpdateQueryBuilder with joins and filters
+### TASK-MUT-004: Implement UpdateQueryBuilder with joins and filters [x]
 - **REQ**: REQ-MUT-007, REQ-MUT-008
 - **Symbols**: `UpdateQueryBuilder`, `update_table`, `.set()`, `.set_ref()`, `.set_expr()`
 - **What**: Implement `UpdateQueryBuilder` supporting assignments, `from`, joins, and where filters (`where_`, `where_ref`, `where_expr`, `or_where_*`).
