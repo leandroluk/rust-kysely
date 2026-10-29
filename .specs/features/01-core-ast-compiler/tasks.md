@@ -19,7 +19,7 @@
 - **Done when**: Terminal nodes construct cleanly, wrap in `OperationNode`, and fit identifiers <= 24 bytes inline.
 - **Gate**: `cargo test test_terminal_nodes`
 
-### TASK-AST-003: Implement Clause and Expression AST nodes
+### TASK-AST-003: Implement Clause and Expression AST nodes [x]
 - **REQ**: REQ-AST-001, REQ-AST-004
 - **Symbols**: `FromNode`, `JoinNode`, `SelectionNode`, `WhereNode`, `HavingNode`, `GroupByNode`, `OrderByNode`, `LimitNode`, `OffsetNode`, `WithNode`, `BinaryOperationNode`, `UnaryOperationNode`, `CaseNode`, `WhenNode`, `CastNode`, `AliasNode`, `ParensNode`
 - **What**: Implement all clause and expression nodes using `SmallVec<[T; 4]>` for selections, joins, and parameters.
