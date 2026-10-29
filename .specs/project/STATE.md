@@ -4,17 +4,18 @@
 - **Current Milestone**: Milestone 3 (Select Query Builder, Joins & Projections) — Em Execução
 - **Active Feature**: [03-select-query-builder](../features/03-select-query-builder/spec.md)
 - **Current Phase**: Execute
-- **Active Task**: TASK-SEL-006
+- **Active Task**: TASK-SEL-007
 - **Blockers**: None
 
 ## Cost
 - Milestone 1 e Milestone 2 implementadas integralmente com 100% dos requisitos REQ-AST-001 a REQ-AST-010 e REQ-EXPR-001 a REQ-EXPR-010 satisfeitos.
 - Design e decomposição em 7 tarefas atômicas concluídos para a Milestone 3 (`TASK-SEL-001` a `TASK-SEL-007`).
-- 31 testes de integração e unitários passando em 0.00s.
+- 32 testes de integração e unitários passando em 0.01s.
 - `cargo clippy -- -D warnings` limpo sem nenhum aviso.
 - Footprint control validado: `target/` em ~272MB, zero `.pdb`s descontrolados, sem macros procedurais.
 
 ## Recent Progress (Last 10)
+- 2026-10-29 TASK-SEL-006 complete. Gate: 32/32 pass. [REQ-SEL-010]
 - 2026-10-29 TASK-SEL-005 complete. Gate: 31/31 pass. [REQ-SEL-007] [REQ-SEL-008] [REQ-SEL-009]
 - 2026-10-29 TASK-SEL-004 complete. Gate: 30/30 pass. [REQ-SEL-004] [REQ-SEL-006]
 - 2026-10-29 TASK-SEL-003 complete. Gate: 28/28 pass. [REQ-SEL-003]
@@ -44,5 +45,5 @@
 - [x] TASK-SEL-003: Implement join methods and JoinBuilder — Execute phase
 - [x] TASK-SEL-004: Implement filtering methods (where_, where_ref, where_expr, or_where_*) — Execute phase
 - [x] TASK-SEL-005: Implement grouping, having, sorting, and pagination — Execute phase
-- [ ] TASK-SEL-006: Implement CTEs (with) and set operations (union, intersect, except) — Execute phase
+- [x] TASK-SEL-006: Implement CTEs (with) and set operations (union, intersect, except) — Execute phase
 - [ ] TASK-SEL-007: Comprehensive integration tests for SelectQueryBuilder — Execute phase

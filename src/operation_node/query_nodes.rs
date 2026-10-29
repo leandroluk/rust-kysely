@@ -108,6 +108,9 @@ pub struct SelectQueryNode {
     pub limit: Option<Arc<OperationNode>>,
     /// OFFSET clause.
     pub offset: Option<Arc<OperationNode>>,
+    /// Set operations (UNION, INTERSECT, EXCEPT).
+    // @spec REQ-AST-004
+    pub set_operations: SmallVec<[Arc<OperationNode>; 1]>,
 }
 
 impl SelectQueryNode {

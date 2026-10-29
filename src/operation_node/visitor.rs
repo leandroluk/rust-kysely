@@ -27,6 +27,7 @@ pub trait OperationNodeVisitor {
             OperationNode::Offset(n) => self.visit_offset(n),
             OperationNode::With(n) => self.visit_with(n),
             OperationNode::CommonTableExpression(n) => self.visit_common_table_expression(n),
+            OperationNode::SetOperation(n) => self.visit_set_operation(n),
             OperationNode::Binary(n) => self.visit_binary(n),
             OperationNode::Unary(n) => self.visit_unary(n),
             OperationNode::Case(n) => self.visit_case(n),
@@ -159,6 +160,11 @@ pub trait OperationNodeVisitor {
         self.visit_node(&node.expression);
     }
 
+    /// Visits a SetOperationNode.
+    fn visit_set_operation(&mut self, node: &SetOperationNode) {
+        self.visit_node(&node.expression);
+    }
+
     /// Visits a BinaryOperationNode.
     fn visit_binary(&mut self, node: &BinaryOperationNode) {
         self.visit_node(&node.left);
@@ -260,6 +266,9 @@ pub trait OperationNodeVisitor {
         }
         if let Some(ref off) = node.offset {
             self.visit_node(off);
+        }
+        for set_op in &node.set_operations {
+            self.visit_node(set_op);
         }
     }
 

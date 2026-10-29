@@ -274,6 +274,13 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
         self.append(")");
     }
 
+    fn visit_set_operation(&mut self, node: &SetOperationNode) {
+        self.append(" ");
+        self.append(node.operator.as_sql());
+        self.append(" ");
+        self.visit_node(&node.expression);
+    }
+
     fn visit_binary(&mut self, node: &BinaryOperationNode) {
         self.visit_node(&node.left);
         self.append(" ");
@@ -418,6 +425,10 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
 
         if let Some(ref off) = node.offset {
             self.visit_node(off);
+        }
+
+        for set_op in &node.set_operations {
+            self.visit_node(set_op);
         }
     }
 

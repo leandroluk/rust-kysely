@@ -32,6 +32,7 @@ pub trait OperationNodeTransformer {
             OperationNode::CommonTableExpression(n) => {
                 self.transform_common_table_expression(n, &node)
             }
+            OperationNode::SetOperation(n) => self.transform_set_operation(n, &node),
             OperationNode::Binary(n) => self.transform_binary(n, &node),
             OperationNode::Unary(n) => self.transform_unary(n, &node),
             OperationNode::Case(n) => self.transform_case(n, &node),
@@ -426,6 +427,24 @@ pub trait OperationNodeTransformer {
         }
     }
 
+    /// Transforms a SetOperationNode.
+    fn transform_set_operation(
+        &mut self,
+        node: &SetOperationNode,
+        orig: &Arc<OperationNode>,
+    ) -> Arc<OperationNode> {
+        let new_expr = self.transform_node(Arc::clone(&node.expression));
+
+        if Arc::ptr_eq(&node.expression, &new_expr) {
+            Arc::clone(orig)
+        } else {
+            Arc::new(OperationNode::SetOperation(SetOperationNode {
+                operator: node.operator,
+                expression: new_expr,
+            }))
+        }
+    }
+
     /// Transforms a BinaryOperationNode.
     fn transform_binary(
         &mut self,
@@ -699,6 +718,7 @@ pub trait OperationNodeTransformer {
                 order_by: node.order_by.clone(),
                 limit: node.limit.clone(),
                 offset: node.offset.clone(),
+                set_operations: node.set_operations.clone(),
             }))
         }
     }

@@ -308,6 +308,54 @@ impl WithNode {
     }
 }
 
+/// SQL Set operation type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SetOperator {
+    /// UNION
+    Union,
+    /// UNION ALL
+    UnionAll,
+    /// INTERSECT
+    Intersect,
+    /// INTERSECT ALL
+    IntersectAll,
+    /// EXCEPT
+    Except,
+    /// EXCEPT ALL
+    ExceptAll,
+}
+
+impl SetOperator {
+    /// Returns the SQL representation of the operator.
+    pub fn as_sql(&self) -> &'static str {
+        match self {
+            SetOperator::Union => "UNION",
+            SetOperator::UnionAll => "UNION ALL",
+            SetOperator::Intersect => "INTERSECT",
+            SetOperator::IntersectAll => "INTERSECT ALL",
+            SetOperator::Except => "EXCEPT",
+            SetOperator::ExceptAll => "EXCEPT ALL",
+        }
+    }
+}
+
+/// Set operation node (UNION, INTERSECT, EXCEPT).
+// @spec REQ-AST-001
+#[derive(Debug, Clone, PartialEq)]
+pub struct SetOperationNode {
+    /// Operator type.
+    pub operator: SetOperator,
+    /// Expression or query to combine with.
+    pub expression: Arc<OperationNode>,
+}
+
+impl SetOperationNode {
+    /// Creates a new set operation node.
+    pub fn new(operator: SetOperator, expression: Arc<OperationNode>) -> Self {
+        Self { operator, expression }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

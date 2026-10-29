@@ -45,7 +45,7 @@
 - **Done when**: Clauses populate their respective AST nodes and compile accurately.
 - **Gate**: `cargo test test_select_clauses`
 
-### TASK-SEL-006: Implement CTEs (with) and set operations (union, intersect, except)
+### TASK-SEL-006: Implement CTEs (with) and set operations (union, intersect, except) [x]
 - **REQ**: REQ-SEL-010
 - **Symbols**: `with`, `with_recursive`, `union`, `union_all`, `intersect`, `except`
 - **What**: Implement Common Table Expressions and set operations on `SelectQueryBuilder`.

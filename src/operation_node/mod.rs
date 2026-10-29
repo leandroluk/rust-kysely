@@ -10,8 +10,8 @@ pub mod visitor;
 
 pub use clause_nodes::{
     CommonTableExpressionNode, FromNode, GroupByNode, HavingNode, JoinNode, JoinType, LimitNode,
-    OffsetNode, OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, SelectionNode, WhereNode,
-    WithNode,
+    OffsetNode, OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, SelectionNode,
+    SetOperationNode, SetOperator, WhereNode, WithNode,
 };
 pub use expression_nodes::{
     AliasNode, AndNode, BinaryOperationNode, CaseNode, CastNode, FunctionNode, OrNode, ParensNode,
@@ -74,6 +74,8 @@ pub enum OperationNode {
     With(WithNode),
     /// Common Table Expression node
     CommonTableExpression(CommonTableExpressionNode),
+    /// Set operation node (UNION, INTERSECT, EXCEPT)
+    SetOperation(SetOperationNode),
 
     // Expressions
     /// Binary operation node

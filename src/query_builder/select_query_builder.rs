@@ -6,9 +6,10 @@ use smallvec::SmallVec;
 
 use crate::expression::{Expression, ExpressionBuilder, ExpressionWrapper};
 use crate::operation_node::{
-    AndNode, ColumnNode, FromNode, GroupByNode, HavingNode, IntoValue, JoinType, LimitNode,
-    OffsetNode, OperationNode, OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, OrNode,
-    ReferenceNode, SelectQueryNode, SelectionNode, ValueNode, WhereNode,
+    AndNode, ColumnNode, CommonTableExpressionNode, FromNode, GroupByNode, HavingNode,
+    IdentifierNode, IntoValue, JoinType, LimitNode, OffsetNode, OperationNode, OrderByItemNode,
+    OrderByNode, OrderDirection, OrderNulls, OrNode, ReferenceNode, SelectQueryNode, SelectionNode,
+    SetOperationNode, SetOperator, ValueNode, WhereNode, WithNode,
 };
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
@@ -434,6 +435,121 @@ impl SelectQueryBuilder {
         self
     }
 
+    fn append_cte(
+        &mut self,
+        recursive: bool,
+        name: impl Into<CompactString>,
+        expression: Arc<OperationNode>,
+    ) {
+        let cte_item = Arc::new(OperationNode::CommonTableExpression(
+            CommonTableExpressionNode::new(
+                Arc::new(OperationNode::Identifier(IdentifierNode::new(name))),
+                expression,
+            ),
+        ));
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        if let Some(ref existing) = q.with {
+            if let OperationNode::With(w) = existing.as_ref() {
+                let mut expressions = w.expressions.clone();
+                expressions.push(cte_item);
+                let is_rec = w.recursive || recursive;
+                q.with = Some(Arc::new(OperationNode::With(WithNode::new(
+                    is_rec,
+                    expressions,
+                ))));
+                return;
+            }
+        }
+        q.with = Some(Arc::new(OperationNode::With(WithNode::new(
+            recursive,
+            [cte_item],
+        ))));
+    }
+
+    /// Adds a Common Table Expression (`WITH cte AS (...)`).
+    // @spec REQ-SEL-010
+    pub fn with(mut self, name: impl Into<CompactString>, expr: impl Expression) -> Self {
+        self.append_cte(false, name, expr.to_operation_node());
+        self
+    }
+
+    /// Adds a Common Table Expression via a builder callback (`WITH cte AS (...)`).
+    // @spec REQ-SEL-010
+    pub fn with_expr<F, E, T>(mut self, name: impl Into<CompactString>, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        let eb = ExpressionBuilder::new();
+        let expr = (cb)(&eb);
+        self.append_cte(false, name, expr.to_operation_node());
+        self
+    }
+
+    /// Adds a recursive Common Table Expression (`WITH RECURSIVE cte AS (...)`).
+    // @spec REQ-SEL-010
+    pub fn with_recursive(
+        mut self,
+        name: impl Into<CompactString>,
+        expr: impl Expression,
+    ) -> Self {
+        self.append_cte(true, name, expr.to_operation_node());
+        self
+    }
+
+    /// Adds a recursive Common Table Expression via a builder callback.
+    // @spec REQ-SEL-010
+    pub fn with_recursive_expr<F, E, T>(mut self, name: impl Into<CompactString>, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        let eb = ExpressionBuilder::new();
+        let expr = (cb)(&eb);
+        self.append_cte(true, name, expr.to_operation_node());
+        self
+    }
+
+    /// Combines this query with another using `UNION`.
+    // @spec REQ-SEL-010
+    pub fn union(mut self, other: impl Expression) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.set_operations.push(Arc::new(OperationNode::SetOperation(
+            SetOperationNode::new(SetOperator::Union, other.to_operation_node()),
+        )));
+        self
+    }
+
+    /// Combines this query with another using `UNION ALL`.
+    // @spec REQ-SEL-010
+    pub fn union_all(mut self, other: impl Expression) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.set_operations.push(Arc::new(OperationNode::SetOperation(
+            SetOperationNode::new(SetOperator::UnionAll, other.to_operation_node()),
+        )));
+        self
+    }
+
+    /// Combines this query with another using `INTERSECT`.
+    // @spec REQ-SEL-010
+    pub fn intersect(mut self, other: impl Expression) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.set_operations.push(Arc::new(OperationNode::SetOperation(
+            SetOperationNode::new(SetOperator::Intersect, other.to_operation_node()),
+        )));
+        self
+    }
+
+    /// Combines this query with another using `EXCEPT`.
+    // @spec REQ-SEL-010
+    pub fn except(mut self, other: impl Expression) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.set_operations.push(Arc::new(OperationNode::SetOperation(
+            SetOperationNode::new(SetOperator::Except, other.to_operation_node()),
+        )));
+        self
+    }
+
     /// Compiles the query using the specified query compiler.
     pub fn compile(&self, compiler: &impl QueryCompiler) -> CompiledQuery {
         compiler.compile(&OperationNode::SelectQuery((*self.node).clone()))
@@ -748,6 +864,41 @@ mod tests {
         assert_eq!(
             q4.sql,
             "SELECT \"u\".\"id\" FROM \"users\" AS \"u\" ORDER BY \"u\".\"age\" ASC NULLS FIRST"
+        );
+    }
+
+    #[test]
+    fn test_select_with_and_set_ops() {
+        let compiler = PostgresQueryCompiler::new();
+
+        // 1. CTE: WITH cte AS (SELECT ...)
+        let cte_query = select_from("users").select(["id"]).where_("active", "=", true);
+        let q1 = select_from("active_users")
+            .with("active_users", cte_query)
+            .select_all()
+            .compile(&compiler);
+
+        assert_eq!(
+            q1.sql,
+            "WITH \"active_users\" AS (SELECT \"id\" FROM \"users\" WHERE \"active\" = $1) SELECT * FROM \"active_users\""
+        );
+        assert_eq!(q1.parameters, vec![crate::operation_node::Value::from(true)]);
+
+        // 2. UNION & INTERSECT & EXCEPT
+        let q_a = select_from("users").select(["id"]).where_("role", "=", "admin");
+        let q_b = select_from("users").select(["id"]).where_("role", "=", "moderator");
+        let q_union = q_a.union(q_b).compile(&compiler);
+
+        assert_eq!(
+            q_union.sql,
+            "SELECT \"id\" FROM \"users\" WHERE \"role\" = $1 UNION SELECT \"id\" FROM \"users\" WHERE \"role\" = $2"
+        );
+        assert_eq!(
+            q_union.parameters,
+            vec![
+                crate::operation_node::Value::from("admin"),
+                crate::operation_node::Value::from("moderator"),
+            ]
         );
     }
 }
