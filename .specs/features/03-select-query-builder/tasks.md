@@ -18,7 +18,7 @@
 - **Done when**: `select_from("users as u")` creates a valid `SelectQueryBuilder` with `from` clause.
 - **Gate**: `cargo test test_select_from`
 
-### TASK-SEL-003: Implement join methods and JoinBuilder
+### TASK-SEL-003: Implement join methods and JoinBuilder [x]
 - **REQ**: REQ-SEL-003
 - **Symbols**: `JoinBuilder`, `inner_join`, `left_join`, `right_join`, `full_join`
 - **What**: Implement `JoinBuilder` and join methods on `SelectQueryBuilder` supporting direct column equality and closure builders (`|jb| jb.on(...).on_ref(...)`).
