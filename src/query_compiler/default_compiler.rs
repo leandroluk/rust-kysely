@@ -362,14 +362,18 @@ impl<'a> OperationNodeVisitor for CompilerVisitor<'a> {
         }
         self.append("SELECT ");
         if let Some(ref distinct) = node.distinct_on {
-            self.append("DISTINCT ON (");
-            for (i, d) in distinct.iter().enumerate() {
-                if i > 0 {
-                    self.append(", ");
+            if distinct.is_empty() {
+                self.append("DISTINCT ");
+            } else {
+                self.append("DISTINCT ON (");
+                for (i, d) in distinct.iter().enumerate() {
+                    if i > 0 {
+                        self.append(", ");
+                    }
+                    self.visit_node(d);
                 }
-                self.visit_node(d);
+                self.append(") ");
             }
-            self.append(") ");
         }
 
         if node.selections.is_empty() {

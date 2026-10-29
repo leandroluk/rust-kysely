@@ -2,11 +2,13 @@
 
 use std::sync::Arc;
 use compact_str::CompactString;
+use smallvec::SmallVec;
 
-use crate::expression::{Expression, ExpressionBuilder};
+use crate::expression::{Expression, ExpressionBuilder, ExpressionWrapper};
 use crate::operation_node::{
-    AndNode, ColumnNode, FromNode, IntoValue, JoinType, OperationNode, OrNode, ReferenceNode,
-    SelectQueryNode, SelectionNode, WhereNode,
+    AndNode, ColumnNode, FromNode, GroupByNode, HavingNode, IntoValue, JoinType, LimitNode,
+    OffsetNode, OperationNode, OrderByItemNode, OrderByNode, OrderDirection, OrderNulls, OrNode,
+    ReferenceNode, SelectQueryNode, SelectionNode, ValueNode, WhereNode,
 };
 use crate::parser::{IntoSelections, IntoTableSource};
 use crate::query_builder::join_builder::JoinBuilder;
@@ -270,6 +272,168 @@ impl SelectQueryBuilder {
         self
     }
 
+    fn append_having(&mut self, next_cond: Arc<OperationNode>) {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        if let Some(existing) = q.having.take() {
+            let existing_filter = match existing.as_ref() {
+                OperationNode::Having(h) => h.having_expr.clone(),
+                _ => existing,
+            };
+            let and_node = Arc::new(OperationNode::And(AndNode::new(existing_filter, next_cond)));
+            q.having = Some(Arc::new(OperationNode::Having(HavingNode::new(and_node))));
+        } else {
+            q.having = Some(Arc::new(OperationNode::Having(HavingNode::new(next_cond))));
+        }
+    }
+
+    /// Adds a `GROUP BY` clause with one or more grouping items.
+    // @spec REQ-SEL-007
+    pub fn group_by(mut self, items: impl IntoGroupBy) -> Self {
+        let nodes = items.into_group_by_nodes();
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        if let Some(ref existing) = q.group_by {
+            if let OperationNode::GroupBy(gb) = existing.as_ref() {
+                let mut combined = gb.items.clone();
+                combined.extend(nodes);
+                q.group_by = Some(Arc::new(OperationNode::GroupBy(GroupByNode::new(combined))));
+                return self;
+            }
+        }
+        q.group_by = Some(Arc::new(OperationNode::GroupBy(GroupByNode::new(nodes))));
+        self
+    }
+
+    /// Adds a `HAVING col OP val` filter to the query.
+    // @spec REQ-SEL-007
+    pub fn having(
+        mut self,
+        col: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        val: impl IntoValue,
+    ) -> Self {
+        let eb = ExpressionBuilder::new();
+        let cond = eb.cmp(col, operator, val);
+        self.append_having(cond.to_operation_node());
+        self
+    }
+
+    /// Adds a `HAVING col1 OP col2` reference comparison filter to the query.
+    // @spec REQ-SEL-007
+    pub fn having_ref(
+        mut self,
+        col1: impl Into<CompactString>,
+        operator: impl Into<CompactString>,
+        col2: impl Into<CompactString>,
+    ) -> Self {
+        let eb = ExpressionBuilder::new();
+        let cond = eb.cmp_ref(col1, operator, col2);
+        self.append_having(cond.to_operation_node());
+        self
+    }
+
+    /// Adds an arbitrary boolean expression to the `HAVING` clause via a callback.
+    // @spec REQ-SEL-007
+    pub fn having_expr<F, E, T>(mut self, cb: F) -> Self
+    where
+        F: FnOnce(&ExpressionBuilder) -> E,
+        E: Expression<T>,
+    {
+        let eb = ExpressionBuilder::new();
+        let cond = (cb)(&eb);
+        self.append_having(cond.to_operation_node());
+        self
+    }
+
+    /// Adds an `ORDER BY` item with direction (`"asc"` or `"desc"` or `OrderDirection`).
+    // @spec REQ-SEL-008
+    pub fn order_by(
+        mut self,
+        expr: impl IntoOrderByExpr,
+        direction: impl IntoOrderDirection,
+    ) -> Self {
+        let item = OrderByItemNode::new(
+            expr.into_order_by_expr(),
+            direction.into_order_direction(),
+        );
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        if let Some(ref existing) = q.order_by {
+            if let OperationNode::OrderBy(ob) = existing.as_ref() {
+                let mut combined = ob.items.clone();
+                combined.push(Arc::new(OperationNode::OrderByItem(item)));
+                q.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new(combined))));
+                return self;
+            }
+        }
+        q.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new([
+            Arc::new(OperationNode::OrderByItem(item)),
+        ]))));
+        self
+    }
+
+    /// Adds an `ORDER BY` item with direction and nulls positioning.
+    // @spec REQ-SEL-008
+    pub fn order_by_nulls(
+        mut self,
+        expr: impl IntoOrderByExpr,
+        direction: impl IntoOrderDirection,
+        nulls: OrderNulls,
+    ) -> Self {
+        let item = OrderByItemNode::with_nulls(
+            expr.into_order_by_expr(),
+            direction.into_order_direction(),
+            nulls,
+        );
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        if let Some(ref existing) = q.order_by {
+            if let OperationNode::OrderBy(ob) = existing.as_ref() {
+                let mut combined = ob.items.clone();
+                combined.push(Arc::new(OperationNode::OrderByItem(item)));
+                q.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new(combined))));
+                return self;
+            }
+        }
+        q.order_by = Some(Arc::new(OperationNode::OrderBy(OrderByNode::new([
+            Arc::new(OperationNode::OrderByItem(item)),
+        ]))));
+        self
+    }
+
+    /// Sets the `LIMIT` count for pagination.
+    // @spec REQ-SEL-009
+    pub fn limit(mut self, limit: i64) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.limit = Some(Arc::new(OperationNode::Limit(LimitNode::new(Arc::new(
+            OperationNode::Value(ValueNode::new(limit)),
+        )))));
+        self
+    }
+
+    /// Sets the `OFFSET` count for pagination.
+    // @spec REQ-SEL-009
+    pub fn offset(mut self, offset: i64) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.offset = Some(Arc::new(OperationNode::Offset(OffsetNode::new(Arc::new(
+            OperationNode::Value(ValueNode::new(offset)),
+        )))));
+        self
+    }
+
+    /// Marks the query with `DISTINCT`.
+    // @spec REQ-SEL-009
+    pub fn distinct(mut self) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.distinct_on = Some(SmallVec::new());
+        self
+    }
+
+    /// Marks the query with `DISTINCT ON` for specific columns (PostgreSQL).
+    // @spec REQ-SEL-009
+    pub fn distinct_on(mut self, cols: impl IntoGroupBy) -> Self {
+        let q = SelectQueryNode::clone_mut(&mut self.node);
+        q.distinct_on = Some(cols.into_group_by_nodes().into_iter().collect());
+        self
+    }
+
     /// Compiles the query using the specified query compiler.
     pub fn compile(&self, compiler: &impl QueryCompiler) -> CompiledQuery {
         compiler.compile(&OperationNode::SelectQuery((*self.node).clone()))
@@ -279,6 +443,115 @@ impl SelectQueryBuilder {
 impl Expression for SelectQueryBuilder {
     fn to_operation_node(&self) -> Arc<OperationNode> {
         Arc::new(OperationNode::SelectQuery((*self.node).clone()))
+    }
+}
+
+/// Trait for converting items into order by expressions.
+// @spec REQ-SEL-008
+pub trait IntoOrderByExpr {
+    /// Converts this item into an AST node.
+    fn into_order_by_expr(self) -> Arc<OperationNode>;
+}
+
+impl IntoOrderByExpr for &str {
+    fn into_order_by_expr(self) -> Arc<OperationNode> {
+        if let Some((tbl, col)) = self.split_once('.') {
+            Arc::new(OperationNode::Reference(ReferenceNode::with_table(tbl, col)))
+        } else {
+            Arc::new(OperationNode::Column(ColumnNode::new(self)))
+        }
+    }
+}
+
+impl IntoOrderByExpr for CompactString {
+    fn into_order_by_expr(self) -> Arc<OperationNode> {
+        self.as_str().into_order_by_expr()
+    }
+}
+
+impl IntoOrderByExpr for String {
+    fn into_order_by_expr(self) -> Arc<OperationNode> {
+        self.as_str().into_order_by_expr()
+    }
+}
+
+impl<T> IntoOrderByExpr for ExpressionWrapper<T> {
+    fn into_order_by_expr(self) -> Arc<OperationNode> {
+        self.to_operation_node()
+    }
+}
+
+impl IntoOrderByExpr for Arc<OperationNode> {
+    fn into_order_by_expr(self) -> Arc<OperationNode> {
+        self
+    }
+}
+
+/// Trait for converting values into an `OrderDirection`.
+// @spec REQ-SEL-008
+pub trait IntoOrderDirection {
+    /// Converts this item into an `OrderDirection`.
+    fn into_order_direction(self) -> OrderDirection;
+}
+
+impl IntoOrderDirection for OrderDirection {
+    fn into_order_direction(self) -> OrderDirection {
+        self
+    }
+}
+
+impl IntoOrderDirection for &str {
+    fn into_order_direction(self) -> OrderDirection {
+        if self.eq_ignore_ascii_case("desc") {
+            OrderDirection::Desc
+        } else {
+            OrderDirection::Asc
+        }
+    }
+}
+
+/// Trait for converting types into a list of grouping AST nodes.
+// @spec REQ-SEL-007
+pub trait IntoGroupBy {
+    /// Converts this into a collection of AST nodes.
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]>;
+}
+
+impl IntoGroupBy for &str {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        let mut v = SmallVec::new();
+        v.push(self.into_order_by_expr());
+        v
+    }
+}
+
+impl IntoGroupBy for CompactString {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        self.as_str().into_group_by_nodes()
+    }
+}
+
+impl<const N: usize> IntoGroupBy for [&str; N] {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        self.into_iter().map(|s| s.into_order_by_expr()).collect()
+    }
+}
+
+impl<const N: usize> IntoGroupBy for [CompactString; N] {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        self.into_iter().map(|s| s.into_order_by_expr()).collect()
+    }
+}
+
+impl IntoGroupBy for Vec<&str> {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        self.into_iter().map(|s| s.into_order_by_expr()).collect()
+    }
+}
+
+impl IntoGroupBy for Vec<CompactString> {
+    fn into_group_by_nodes(self) -> SmallVec<[Arc<OperationNode>; 4]> {
+        self.into_iter().map(|s| s.into_order_by_expr()).collect()
     }
 }
 
@@ -415,6 +688,66 @@ mod tests {
                 crate::operation_node::Value::from("admin"),
                 crate::operation_node::Value::from("moderator"),
             ]
+        );
+    }
+
+    #[test]
+    fn test_select_clauses() {
+        let compiler = PostgresQueryCompiler::new();
+
+        // 1. group_by, having, order_by, limit, offset
+        let q1 = select_from("orders as o")
+            .select(["o.user_id", "o.status"])
+            .group_by(["o.user_id", "o.status"])
+            .having("o.status", "=", "completed")
+            .order_by("o.user_id", "desc")
+            .limit(10)
+            .offset(20)
+            .compile(&compiler);
+
+        assert_eq!(
+            q1.sql,
+            "SELECT \"o\".\"user_id\", \"o\".\"status\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"user_id\", \"o\".\"status\" HAVING \"o\".\"status\" = $1 ORDER BY \"o\".\"user_id\" DESC LIMIT $2 OFFSET $3"
+        );
+        assert_eq!(
+            q1.parameters,
+            vec![
+                crate::operation_node::Value::from("completed"),
+                crate::operation_node::Value::from(10),
+                crate::operation_node::Value::from(20),
+            ]
+        );
+
+        // 2. distinct and distinct_on
+        let q2 = select_from("users as u")
+            .select(["u.id", "u.name"])
+            .distinct()
+            .compile(&compiler);
+
+        assert_eq!(
+            q2.sql,
+            "SELECT DISTINCT \"u\".\"id\", \"u\".\"name\" FROM \"users\" AS \"u\""
+        );
+
+        let q3 = select_from("users as u")
+            .select(["u.id", "u.email"])
+            .distinct_on(["u.email"])
+            .compile(&compiler);
+
+        assert_eq!(
+            q3.sql,
+            "SELECT DISTINCT ON (\"u\".\"email\") \"u\".\"id\", \"u\".\"email\" FROM \"users\" AS \"u\""
+        );
+
+        // 3. order_by_nulls
+        let q4 = select_from("users as u")
+            .select(["u.id"])
+            .order_by_nulls("u.age", "asc", OrderNulls::First)
+            .compile(&compiler);
+
+        assert_eq!(
+            q4.sql,
+            "SELECT \"u\".\"id\" FROM \"users\" AS \"u\" ORDER BY \"u\".\"age\" ASC NULLS FIRST"
         );
     }
 }

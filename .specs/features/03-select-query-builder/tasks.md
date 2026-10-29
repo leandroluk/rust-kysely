@@ -36,7 +36,7 @@
 - **Done when**: Filtering chains combine correctly into `WhereNode` in the AST.
 - **Gate**: `cargo test test_select_where`
 
-### TASK-SEL-005: Implement grouping, having, sorting, and pagination
+### TASK-SEL-005: Implement grouping, having, sorting, and pagination [x]
 - **REQ**: REQ-SEL-007, REQ-SEL-008, REQ-SEL-009
 - **Symbols**: `group_by`, `having`, `having_ref`, `having_expr`, `order_by`, `limit`, `offset`, `distinct`, `distinct_on`
 - **What**: Implement `group_by`, `having*`, `order_by`, `limit`, `offset`, `distinct`, and `distinct_on` methods.
