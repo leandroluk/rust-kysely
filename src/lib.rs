@@ -35,6 +35,10 @@ pub use dialect::sqlite::{
 pub use dialect::mysql::{
     MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler, MYSQL_MIGRATION_LOCK_NAME,
 };
+#[cfg(feature = "mssql")]
+pub use dialect::mssql::{
+    MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler, MSSQL_MIGRATION_LOCK_NAME,
+};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use introspection::{

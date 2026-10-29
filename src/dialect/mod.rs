@@ -79,3 +79,9 @@ pub mod mysql;
 
 #[cfg(feature = "mysql")]
 pub use mysql::{MysqlAdapter, MysqlDialect, MysqlIntrospector, MysqlQueryCompiler};
+
+#[cfg(feature = "mssql")]
+pub mod mssql;
+
+#[cfg(feature = "mssql")]
+pub use mssql::{MssqlAdapter, MssqlDialect, MssqlIntrospector, MssqlQueryCompiler};
