@@ -1064,3 +1064,49 @@ async fn test_integration_plugin_suite_combined() {
     assert_eq!(name, "John Doe");
     assert_eq!(count, 15);
 }
+
+#[tokio::test]
+async fn test_integration_all_five_dialects_matrix() {
+    use rust_kysely::dialect::postgres::PostgresQueryCompiler;
+    use rust_kysely::dialect::mysql::MysqlQueryCompiler;
+    use rust_kysely::dialect::mssql::MssqlQueryCompiler;
+    use rust_kysely::dialect::sqlite::SqliteQueryCompiler;
+    use rust_kysely::query_compiler::QueryCompiler;
+    use rust_kysely::select_from;
+
+    // Build standard AST query: SELECT id, username FROM users WHERE active = true
+    let query_builder = select_from("users")
+        .select(["id", "username"])
+        .where_("active", "=", true);
+
+    let node = query_builder.to_operation_node();
+
+    // 1. PostgreSQL compiler check: double quotes and $1 parameter
+    let pg_compiler = PostgresQueryCompiler::new();
+    let pg_query = pg_compiler.compile(&node);
+    assert_eq!(pg_query.sql, "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = $1");
+    assert_eq!(pg_query.parameters.len(), 1);
+
+    // 2. MySQL compiler check: backtick quotes and ? parameter
+    let mysql_compiler = MysqlQueryCompiler::new();
+    let mysql_query = mysql_compiler.compile(&node);
+    assert_eq!(mysql_query.sql, "SELECT `id`, `username` FROM `users` WHERE `active` = ?");
+    assert_eq!(mysql_query.parameters.len(), 1);
+
+    // 3. MSSQL compiler check: bracket quotes and @p1 parameter
+    let mssql_compiler = MssqlQueryCompiler::new();
+    let mssql_query = mssql_compiler.compile(&node);
+    assert_eq!(mssql_query.sql, "SELECT [id], [username] FROM [users] WHERE [active] = @p1");
+    assert_eq!(mssql_query.parameters.len(), 1);
+
+    // 4. SQLite compiler check: double quotes and ? parameter
+    let sqlite_compiler = SqliteQueryCompiler::new();
+    let sqlite_query = sqlite_compiler.compile(&node);
+    assert_eq!(sqlite_query.sql, "SELECT \"id\", \"username\" FROM \"users\" WHERE \"active\" = ?");
+    assert_eq!(sqlite_query.parameters.len(), 1);
+
+    // 5. PGlite: parity with PostgreSQL compiler
+    let pglite_compiler = PostgresQueryCompiler::new();
+    let pglite_query = pglite_compiler.compile(&node);
+    assert_eq!(pglite_query.sql, pg_query.sql);
+}
