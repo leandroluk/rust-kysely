@@ -2,6 +2,7 @@
 
 pub mod clause_nodes;
 pub mod expression_nodes;
+pub mod query_nodes;
 pub mod terminal_nodes;
 pub mod value;
 
@@ -13,6 +14,10 @@ pub use clause_nodes::{
 pub use expression_nodes::{
     AliasNode, AndNode, BinaryOperationNode, CaseNode, CastNode, OrNode, ParensNode,
     UnaryOperationNode, WhenNode,
+};
+pub use query_nodes::{
+    ColumnUpdateNode, DeleteQueryNode, InsertQueryNode, OnConflictNode, SelectQueryNode,
+    UpdateQueryNode, ValuesNode,
 };
 pub use terminal_nodes::{
     ColumnNode, IdentifierNode, PrimitiveValueListNode, RawNode, ReferenceNode, TableNode,
@@ -85,4 +90,20 @@ pub enum OperationNode {
     And(AndNode),
     /// OR boolean node
     Or(OrNode),
+
+    // Queries
+    /// SELECT query node
+    SelectQuery(SelectQueryNode),
+    /// INSERT query node
+    InsertQuery(InsertQueryNode),
+    /// UPDATE query node
+    UpdateQuery(UpdateQueryNode),
+    /// DELETE query node
+    DeleteQuery(DeleteQueryNode),
+    /// Column update node (SET col = val)
+    ColumnUpdate(ColumnUpdateNode),
+    /// VALUES clause node
+    Values(ValuesNode),
+    /// ON CONFLICT clause node
+    OnConflict(OnConflictNode),
 }

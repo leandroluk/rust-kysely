@@ -28,7 +28,7 @@
 - **Done when**: Clauses and binary/unary expressions construct properly and integrate into `OperationNode`.
 - **Gate**: `cargo test test_clause_nodes test_expression_nodes`
 
-### TASK-AST-004: Implement Query AST nodes with Copy-on-Write support
+### TASK-AST-004: Implement Query AST nodes with Copy-on-Write support [x]
 - **REQ**: REQ-AST-001, REQ-AST-002
 - **Symbols**: `SelectQueryNode`, `InsertQueryNode`, `UpdateQueryNode`, `DeleteQueryNode`
 - **What**: Implement the primary query nodes with `Arc` wrapping and builder mutation helpers using `Arc::make_mut`.
