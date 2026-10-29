@@ -45,7 +45,7 @@
 - **Done when**: Transactions execute BEGIN/COMMIT on success, and BEGIN/ROLLBACK on error.
 - **Gate**: `cargo test test_transaction_and_savepoints`
 
-### TASK-DRV-006: Implement PostgresDriver with tokio-postgres
+### TASK-DRV-006: Implement PostgresDriver with tokio-postgres [x]
 - **REQ**: REQ-EXEC-002, REQ-EXEC-003
 - **Symbols**: `PostgresDriver`, `PostgresDialect`
 - **What**: Implement `PostgresDriver` converting `kysely::Value` parameters to `tokio-postgres` types and streaming query execution.

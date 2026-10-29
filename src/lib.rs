@@ -19,7 +19,7 @@ pub mod util;
 
 pub use dialect::{CustomDialect, Dialect};
 #[cfg(feature = "postgres")]
-pub use dialect::PostgresQueryCompiler;
+pub use dialect::postgres::{PostgresConnection, PostgresDialect, PostgresDriver, PostgresQueryCompiler};
 pub use driver::{DatabaseConnection, Driver, DriverError};
 pub use expression::{Expression, ExpressionBuilder, ExpressionWrapper, FunctionModule};
 pub use kysely::Kysely;
