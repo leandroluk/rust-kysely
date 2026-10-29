@@ -4,7 +4,9 @@ pub mod clause_nodes;
 pub mod expression_nodes;
 pub mod query_nodes;
 pub mod terminal_nodes;
+pub mod transformer;
 pub mod value;
+pub mod visitor;
 
 pub use clause_nodes::{
     CommonTableExpressionNode, FromNode, GroupByNode, HavingNode, JoinNode, JoinType, LimitNode,
@@ -23,7 +25,9 @@ pub use terminal_nodes::{
     ColumnNode, IdentifierNode, PrimitiveValueListNode, RawNode, ReferenceNode, TableNode,
     ValueNode,
 };
+pub use transformer::OperationNodeTransformer;
 pub use value::Value;
+pub use visitor::{OperationNodeVisitor, StackTrackingVisitor};
 
 /// Top-level AST node enum representing any node in the query tree.
 // @spec REQ-AST-001

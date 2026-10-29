@@ -37,7 +37,7 @@
 - **Done when**: Query nodes can be cloned cheaply via `Arc` and mutated in-place when uniquely referenced.
 - **Gate**: `cargo test test_query_nodes_cow`
 
-### TASK-AST-005: Implement OperationNodeVisitor and OperationNodeTransformer traits
+### TASK-AST-005: Implement OperationNodeVisitor and OperationNodeTransformer traits [x]
 - **REQ**: REQ-AST-006, REQ-AST-007
 - **Symbols**: `OperationNodeVisitor`, `OperationNodeTransformer`
 - **What**: Implement recursive tree visitor with parent tracking stack and AST transformer for immutable query rewriting.
